@@ -1,4 +1,22 @@
 services:
+  
+  api: 
+    tty: true
+    build:
+      context: .
+      dockerfile: ./projects/api/Dockerfile
+      target: dev 
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./bases/fastai/api:/src/bases/fastai/api
+      - ./components:/src/components
+      - ./test:/src/test
+      - ./projects/api:/src/projects/api
+  
   postgres:
     image: postgres:17.5-bookworm
     environment:
@@ -10,7 +28,7 @@ services:
       - postgres:/data/postgres
       - ./development/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready", "-U", "${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready"]
       interval: 10s
       retries: 5
       start_period: 5s
@@ -22,7 +40,7 @@ services:
   pgadmin:
     image: dpage/pgadmin4:9.4
     depends_on:
-      - "postgres"
+      - postgres
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: Password123!
