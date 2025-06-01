@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.16.1",
+    "asgi-correlation-id>=4.3.4",
     "asyncpg>=0.30.0",
     "fastapi>=0.115.12",
     "fastmcp>=2.5.2",
@@ -38,3 +39,7 @@ dev-mode-dirs = ["components", "bases", "development", "."]
 
 [tool.polylith.bricks]
 "bases/fastai/api" = "fastai/api"
+"components/fastai/users" = "fastai/users"
+"components/fastai/items" = "fastai/items"
+"components/fastai/database" = "fastai/database"
+"components/fastai/logging" = "fastai/logging"

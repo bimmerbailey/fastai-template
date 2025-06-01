@@ -1,11 +1,14 @@
 from contextlib import asynccontextmanager
 from functools import partial
 
+from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
+from fastapi.middleware import Middleware
 import structlog.stdlib
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fastai.database import create_db_engine, destroy_engine, DatabaseSettings
+from fastai.logging.middleware import LoggingMiddleware
 
 
 logger = structlog.stdlib.get_logger(__name__)
@@ -21,5 +24,12 @@ async def lifespan(db_engine: AsyncEngine, app: FastAPI):
 
 def init_api(db_settings: DatabaseSettings = DatabaseSettings()) -> FastAPI:
     engine = create_db_engine(db_settings)
-    app = FastAPI(root_path="/api", lifespan=partial(lifespan, engine))
+    app = FastAPI(
+        root_path="/api",
+        lifespan=partial(lifespan, engine),
+        middleware=[
+            Middleware(CorrelationIdMiddleware),
+            Middleware(LoggingMiddleware, logger=logger),
+        ],
+    )
     return app
