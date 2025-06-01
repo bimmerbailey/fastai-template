@@ -1,10 +1,10 @@
-from dataclasses import dataclass, field
 import time
+from dataclasses import dataclass, field
 
+import structlog
 from asgi_correlation_id.context import correlation_id
 from fastapi import FastAPI
-import structlog
-from starlette.types import Scope, Receive, Send, Message
+from starlette.types import Message, Receive, Scope, Send
 
 
 @dataclass

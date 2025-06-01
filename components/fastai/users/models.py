@@ -1,7 +1,7 @@
 from typing import Optional
 
-from sqlmodel import SQLModel, Field, String, Column, DateTime, func, Boolean, Integer
-from pydantic import EmailStr, AwareDatetime
+from pydantic import AwareDatetime, EmailStr
+from sqlmodel import Boolean, Column, DateTime, Field, Integer, SQLModel, String, func
 
 from fastai.utils.fields import date_now
 

@@ -43,3 +43,9 @@ dev-mode-dirs = ["components", "bases", "development", "."]
 "components/fastai/items" = "fastai/items"
 "components/fastai/database" = "fastai/database"
 "components/fastai/logging" = "fastai/logging"
+
+
+[tool.isort]
+profile = "black"
+known_first_party = ["fastai"]
+line_length=88

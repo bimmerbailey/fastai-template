@@ -1,10 +1,9 @@
 import os
 
 import structlog.stdlib
+from pydantic import PostgresDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
-
-from pydantic import SecretStr, PostgresDsn
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 
 class DatabaseSettings(BaseSettings):

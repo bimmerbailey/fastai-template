@@ -1,15 +1,14 @@
 from contextlib import asynccontextmanager
 from functools import partial
 
+import structlog.stdlib
 from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
 from fastapi.middleware import Middleware
-import structlog.stdlib
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from fastai.database import create_db_engine, destroy_engine, DatabaseSettings
+from fastai.database import DatabaseSettings, create_db_engine, destroy_engine
 from fastai.logging.middleware import LoggingMiddleware
-
 
 logger = structlog.stdlib.get_logger(__name__)
 
