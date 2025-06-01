@@ -18,9 +18,7 @@ class UserBase(SQLModel):
     )
     first_name: Optional[str] = Field(sa_column=Column(String, nullable=True))
     last_name: Optional[str] = Field(sa_column=Column(String, nullable=True))
-    email: EmailStr = Field(
-        Field(sa_column=Column(String, nullable=False, unique=True))
-    )
+    email: EmailStr = Field(sa_column=Column(String, nullable=False, unique=True))
     password: str = Field(sa_column=Column(String, nullable=False))
     is_admin: bool = Field(default=False, sa_column=Column(Boolean, nullable=False))
 
