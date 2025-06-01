@@ -1,3 +1,3 @@
-from fastai.users import core
+from fastai.users.models import UserBase, User
 
-__all__ = ["core"]
+__all__ = ["UserBase", "User"]
