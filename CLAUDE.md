@@ -14,20 +14,25 @@ Components can be shared across multiple bases, enabling modular development and
 
 ## Development Commands
 
+Use `make help` to see all available commands. Key commands:
+
 ### Local Development
 
 ```bash
-# Start all services (API + PostgreSQL + PgAdmin)
-docker compose up
+# Start development environment
+make dev
 
-# Start in background
-docker compose up -d
+# Stop all services  
+make down
 
-# View logs
-docker compose logs -f api
+# View logs (optionally specify SERVICES=service_name)
+make logs
 
-# Stop services
-docker compose down
+# Clean up containers and volumes
+make clean
+
+# Execute commands in containers
+make exec SERVICE=api CMD="bash"
 ```
 
 The API runs on <http://localhost:8000> with hot reload enabled.
@@ -40,36 +45,40 @@ The API runs on <http://localhost:8000> with hot reload enabled.
 ### Code Quality
 
 ```bash
-# Format and lint code
-uv run ruff format .
-uv run ruff check .
+# Format code and sort imports
+make format
 
-# Sort imports
-uv run isort .
+# Run all code quality checks (format + type check + polylith check)
+make lint
 
-# Type checking
-uv run pyright
-
-# Run all code quality checks
-uv run ruff format . && uv run ruff check . && uv run isort . && uv run pyright
+# Type checking only
+make check
 ```
 
 ### Testing
 
 ```bash
 # Run all tests
-uv run python -m pytest
+make test
+
+# Run tests in watch mode
+make test-watch
+
+# Run tests with coverage report
+make test-coverage
+
+# Run tests until first failure
+make test-fast
 
 # Run specific component tests
-uv run python -m pytest test/components/fastai/users/
-
+uv run pytest test/components/fastai/users/ -v
 ```
 
 ### Package Management
 
 ```bash
-# Install dependencies
-uv sync
+# Install all dependencies
+make install
 
 # Add new dependency to workspace
 uv add <package-name>
@@ -81,16 +90,23 @@ uv add --group dev <package-name>
 ### Polylith Management
 
 ```bash
+# Show workspace information
+make poly-info
 
-# Add new component to workspace
-uv run poly create component --name {name}
+# Check workspace consistency
+make poly-check
 
-# Add new base to workspace
-uv run poly create base --name {name}
+# Show workspace changes
+make poly-diff
 
-# Add new project to workspace
-uv run poly create project --name {name}
+# Create new component
+make poly-create-component NAME=component_name
 
+# Create new base
+make poly-create-base NAME=base_name
+
+# Create new project
+make poly-create-project NAME=project_name
 ```
 
 ## Key Technical Details
@@ -140,6 +156,34 @@ When adding new components:
 Alembic is configured but no migrations exist yet. When adding migrations:
 
 ```bash
-uv run alembic revision --autogenerate -m "description"
-uv run alembic upgrade head
+# Create migration
+make migrate-create message="description"
+
+# Run migrations
+make migrate-up
 ```
+
+## AI Integration
+
+The template includes Pydantic AI integration for building AI applications:
+
+- **pydantic-ai-slim** with OpenAI and Logfire support
+- **fastmcp** for Model Context Protocol integration
+- Structured logging optimized for AI/ML observability
+
+## Technology Stack
+
+- **Python 3.13+** with modern async/await patterns
+- **FastAPI** with automatic OpenAPI documentation
+- **SQLModel** for database models with Pydantic integration
+- **PostgreSQL** with async connection pooling
+- **uv** for fast dependency management
+- **Logfire** for observability and monitoring
+- **Docker Compose** for local development
+
+## Important Notes
+
+- All timestamps are timezone-aware using UTC
+- Database models use SQLModel with automatic created_at/updated_at fields
+- Correlation IDs are automatically added to requests for tracing
+- The application uses async context managers for proper resource cleanup
