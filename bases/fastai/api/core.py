@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fastai.database import DatabaseSettings, create_db_engine, destroy_engine
 from fastai.logging.middleware import LoggingMiddleware
+from fastai.logging.core import setup_api_logging
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -22,6 +23,7 @@ async def lifespan(db_engine: AsyncEngine, app: FastAPI):
 
 
 def init_api(db_settings: DatabaseSettings = DatabaseSettings()) -> FastAPI:
+    setup_api_logging()
     engine = create_db_engine(db_settings)
     app = FastAPI(
         root_path="/api",
