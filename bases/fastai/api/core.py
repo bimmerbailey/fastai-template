@@ -33,4 +33,8 @@ def init_api(db_settings: DatabaseSettings = DatabaseSettings()) -> FastAPI:
             Middleware(LoggingMiddleware, logger=logger),
         ],
     )
+    # Store engine in the app state for access by dependency functions
+    app.state.db_engine = engine
     return app
+
+

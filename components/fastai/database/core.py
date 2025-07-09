@@ -1,16 +1,19 @@
 import os
+from typing import AsyncIterator
 
 import structlog.stdlib
 from pydantic import PostgresDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 
 class DatabaseSettings(BaseSettings):
     model_config = SettingsConfigDict(frozen=True, env_prefix="DATABASE_")
 
     hostname: str = "postgres"
-    port: int = 27017
+    port: int = 5432
     name: str = "fastai"
     user: str = "postgres"
     password: SecretStr = "Password123!"
@@ -37,3 +40,16 @@ def create_db_engine(settings: DatabaseSettings = DatabaseSettings()) -> AsyncEn
 async def destroy_engine(engine: AsyncEngine):
     logger.info("Destroying database engine")
     await engine.dispose()
+
+
+async def get_db_session(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
+    async with AsyncSession(engine) as session:
+        try:
+            yield session
+            # await session.commit()
+        except Exception:
+            logger.exception("Failed to get session")
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
