@@ -7,10 +7,10 @@ from fastapi import FastAPI
 from fastapi.middleware import Middleware
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from fastai.database import DatabaseSettings, create_db_engine, destroy_engine
-from fastai.logging.middleware import LoggingMiddleware
-from fastai.logging.core import setup_api_logging
 from fastai.api.routes import health
+from fastai.database import DatabaseSettings, create_db_engine, destroy_engine
+from fastai.logging.core import setup_api_logging
+from fastai.logging.middleware import LoggingMiddleware
 
 logger = structlog.stdlib.get_logger(__name__)
 

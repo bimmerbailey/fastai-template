@@ -46,6 +46,7 @@ dev-mode-dirs = ["components", "bases", "development", "."]
 "components/fastai/items" = "fastai/items"
 "components/fastai/database" = "fastai/database"
 "components/fastai/logging" = "fastai/logging"
+"components/fastai/utils" = "fastai/utils"
 
 
 [tool.isort]

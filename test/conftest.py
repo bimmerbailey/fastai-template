@@ -1,15 +1,15 @@
-import pytest
 from typing import AsyncGenerator
 
+import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from fastai.database.core import DatabaseSettings, create_db_engine, get_db_session
 from fastai.api.core import init_api
+from fastai.database.core import DatabaseSettings, create_db_engine, get_db_session
 
 
 @pytest.fixture

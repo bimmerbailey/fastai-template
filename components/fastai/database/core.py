@@ -5,7 +5,6 @@ import structlog.stdlib
 from pydantic import PostgresDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 

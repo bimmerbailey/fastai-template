@@ -63,15 +63,19 @@ format:
 	uv run ruff check .
 	uv run isort .
 
-lint:
-	uv run ruff format . 
-	uv run ruff check .
-	uv run isort . 
-	uv run pyright
-	uv run poly check --strict
+# Code quality and style targets
+.PHONY: style style-check import-sort poly-check lint
 
-check:
-	uv run pyright
+style-check:
+	uv run ruff check
+
+import-sort:
+	uv run isort . --df
+
+format-check:
+	uv run ruff format --check
+
+lint: style-check import-sort poly-check format-check
 
 # Test targets
 .PHONY: test test-watch test-coverage test-fast

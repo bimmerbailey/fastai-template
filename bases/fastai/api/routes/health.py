@@ -1,7 +1,7 @@
+import structlog.stdlib
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from sqlmodel import text
-import structlog.stdlib
 
 from fastai.api.depenedencies import SessionDep
 
