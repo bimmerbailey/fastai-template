@@ -12,7 +12,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 class DatabaseSettings(BaseSettings):
     model_config = SettingsConfigDict(frozen=True, env_prefix="DATABASE_")
 
-    hostname: str = "postgres"
+    hostname: str = "localhost"
     port: int = 5432
     name: str = "fastai"
     user: str = "postgres"

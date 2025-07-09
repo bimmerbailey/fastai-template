@@ -9,6 +9,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    environment:
+      - DATABASE_HOSTNAME=postgres
     ports:
       - "8000:8000"
     volumes:

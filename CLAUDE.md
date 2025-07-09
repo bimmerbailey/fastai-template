@@ -187,3 +187,11 @@ The template includes Pydantic AI integration for building AI applications:
 - Database models use SQLModel with automatic created_at/updated_at fields
 - Correlation IDs are automatically added to requests for tracing
 - The application uses async context managers for proper resource cleanup
+
+
+## Development Memories
+
+- Make sure all function arguments have types
+- Integration tests should be marked "integration" and should not contain mocks
+- Integration test should be completed and passing before doing mocked tests
+- Always use absolute paths NEVER relative paths

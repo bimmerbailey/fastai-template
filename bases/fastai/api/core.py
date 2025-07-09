@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from fastai.database import DatabaseSettings, create_db_engine, destroy_engine
 from fastai.logging.middleware import LoggingMiddleware
 from fastai.logging.core import setup_api_logging
+from fastai.api.routes import health
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -35,6 +36,8 @@ def init_api(db_settings: DatabaseSettings = DatabaseSettings()) -> FastAPI:
     )
     # Store engine in the app state for access by dependency functions
     app.state.db_engine = engine
+
+    # Include routers
+    app.include_router(health.router)
+
     return app
-
-

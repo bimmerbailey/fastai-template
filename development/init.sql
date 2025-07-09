@@ -1,2 +1,2 @@
-CREATE DATABASE fastapi;
-CREATE DATABASE test_fastapi;
+CREATE DATABASE fastai;
+CREATE DATABASE test_fastai;
