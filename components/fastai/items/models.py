@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import uuid as _uuid
 from decimal import Decimal
 from typing import Optional
 
-from sqlmodel import Column, Field, Integer, Numeric, String, select
+from sqlmodel import Column, Field, Numeric, String, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from fastai.items.schemas import ItemBase, ItemCreate, ItemUpdate
@@ -15,7 +16,7 @@ class Item(ItemBase, TimestampMixin, table=True):
 
     __tablename__ = "items"
 
-    id: int | None = Field(default=None, sa_column=Column(Integer, primary_key=True))
+    id: _uuid.UUID | None = Field(default_factory=_uuid.uuid4, primary_key=True)
     name: str = Field(sa_column=Column(String, nullable=False))
     cost: Optional[Decimal] = Field(
         default=None,
@@ -25,7 +26,7 @@ class Item(ItemBase, TimestampMixin, table=True):
     description: Optional[str] = Field(
         default=None, sa_column=Column(String, nullable=True)
     )
-    quantity: int = Field(default=0, sa_column=Column(Integer, nullable=False))
+    quantity: int = Field(default=0)
 
     @classmethod
     async def create(cls, session: AsyncSession, item_in: ItemCreate) -> Item:
@@ -37,7 +38,7 @@ class Item(ItemBase, TimestampMixin, table=True):
         return item
 
     @classmethod
-    async def get(cls, session: AsyncSession, item_id: int) -> Item | None:
+    async def get(cls, session: AsyncSession, item_id: _uuid.UUID) -> Item | None:
         """Get a single item by ID. Returns None if not found."""
         return await session.get(cls, item_id)
 

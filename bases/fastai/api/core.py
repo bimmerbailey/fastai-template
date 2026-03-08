@@ -7,7 +7,8 @@ from fastapi import FastAPI
 from fastapi.middleware import Middleware
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from fastai.admin_v1.core import init_admin_v1_app
+from fastai.admin_v1 import init_admin_v1_app
+from fastai.api_v1 import init_api_v1
 from fastai.database import DatabaseSettings, create_db_engine, destroy_engine
 from fastai.logger.core import setup_api_logging
 from fastai.logger.middleware import LoggingMiddleware
@@ -38,5 +39,6 @@ def init_api(db_settings: DatabaseSettings |  None = None) -> FastAPI:
 
     # Mount sub-applications
     app.mount("/admin/v1", init_admin_v1_app(engine))
+    app.mount("/api/v1", init_api_v1(engine))
 
     return app

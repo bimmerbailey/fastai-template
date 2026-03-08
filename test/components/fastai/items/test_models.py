@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 
 import pytest
@@ -67,7 +68,7 @@ async def test_get_item(test_db_session: AsyncSession, sample_item: Item) -> Non
 
 @pytest.mark.asyncio
 async def test_get_item_not_found(test_db_session: AsyncSession) -> None:
-    fetched = await Item.get(test_db_session, 99999)
+    fetched = await Item.get(test_db_session, uuid.uuid4())
 
     assert fetched is None
 

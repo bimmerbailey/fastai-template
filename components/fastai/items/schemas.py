@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 from typing import Optional
 
@@ -23,7 +24,7 @@ class ItemCreate(ItemBase):
 class ItemRead(ItemBase):
     """Schema for reading an item. Includes id and timestamps."""
 
-    id: int
+    id: uuid.UUID
     created_at: AwareDatetime
     updated_at: AwareDatetime
 
