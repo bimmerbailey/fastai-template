@@ -25,4 +25,4 @@ dependencies = [
 [tool.polylith.bricks]
 "../../bases/fastai/api" = "fastai/api"
 "../../components/fastai/database" = "fastai/database"
-"../../components/fastai/logging" = "fastai/logging"
+"../../components/fastai/logger" = "fastai/logger"
