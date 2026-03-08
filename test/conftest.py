@@ -6,10 +6,16 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from fastai.api.core import init_api
-from fastai.database.core import DatabaseSettings, create_db_engine, get_db_session
+from fastai.database.core import (
+    DatabaseSettings,
+    create_db_engine,
+    destroy_engine,
+    get_db_session,
+)
 
 
 @pytest.fixture
@@ -24,8 +30,15 @@ async def test_db_engine(
 ) -> AsyncGenerator[AsyncEngine, None]:
     """Create a test database engine."""
     engine = create_db_engine(test_db_settings)
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+
     yield engine
-    await engine.dispose()
+
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.drop_all)
+
+    await destroy_engine(engine)
 
 
 @pytest_asyncio.fixture
