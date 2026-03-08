@@ -29,3 +29,4 @@ dependencies = [
 "../../components/fastai/utils" = "fastai/utils"
 "../../components/fastai/auth" = "fastai/auth"
 "../../components/fastai/users" = "fastai/users"
+"../../components/fastai/admin_v1" = "fastai/admin_v1"

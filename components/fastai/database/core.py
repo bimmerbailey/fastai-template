@@ -6,6 +6,7 @@ from pydantic import PostgresDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import text
 
 
 class DatabaseSettings(BaseSettings):
@@ -52,3 +53,18 @@ async def get_db_session(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
             raise
         finally:
             await session.close()
+
+
+async def health_check(session: AsyncSession):
+    try:
+        # Simple query to test database connectivity
+        result = await session.exec(text("SELECT 1 as test"))
+        row = result.fetchone()
+
+        if row and row[0] == 1:
+            return {"status": "ready"}
+        else:
+            return {"status": "not ready"}
+    except Exception:
+        logger.exception("Error in database health check")
+        return {"status": "not ready"}

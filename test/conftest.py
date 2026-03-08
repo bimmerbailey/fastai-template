@@ -2,14 +2,10 @@ from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from fastai.api.core import init_api
 from fastai.database.core import (
     DatabaseSettings,
     create_db_engine,
@@ -48,25 +44,3 @@ async def test_db_session(
     """Create a test database session."""
     async for session in get_db_session(test_db_engine):
         yield session
-
-
-@pytest_asyncio.fixture
-async def app(test_db_settings: DatabaseSettings) -> AsyncGenerator[FastAPI, None]:
-    """Create FastAPI test application."""
-    application = init_api()
-    yield application
-
-
-@pytest.fixture
-def client(app):
-    """Create synchronous test client."""
-    return TestClient(app)
-
-
-@pytest_asyncio.fixture
-async def async_client(app) -> AsyncGenerator[AsyncClient, None]:
-    """Create asynchronous test client."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://testserver"
-    ) as ac:
-        yield ac

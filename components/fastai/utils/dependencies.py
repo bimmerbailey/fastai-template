@@ -8,6 +8,7 @@ from fastai.database.core import get_db_session
 
 
 def get_db_engine(request: Request) -> AsyncEngine:
+    """Retrieve the database engine from the application state."""
     return request.app.state.db_engine
 
 

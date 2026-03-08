@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware import Middleware
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from fastai.api.routes import health
+from fastai.admin_v1.core import init_admin_v1_app
 from fastai.database import DatabaseSettings, create_db_engine, destroy_engine
 from fastai.logger.core import setup_api_logging
 from fastai.logger.middleware import LoggingMiddleware
@@ -23,21 +23,20 @@ async def lifespan(db_engine: AsyncEngine, app: FastAPI):
     logger.info("Shutting down api")
 
 
-def init_api(db_settings: DatabaseSettings = DatabaseSettings()) -> FastAPI:
+def init_api(db_settings: DatabaseSettings |  None = None) -> FastAPI:
+    db_settings = db_settings or DatabaseSettings()
+    
     setup_api_logging()
     engine = create_db_engine(db_settings)
     app = FastAPI(
-        root_path="/api",
         lifespan=partial(lifespan, engine),
         middleware=[
             Middleware(CorrelationIdMiddleware),
             Middleware(LoggingMiddleware, logger=logger),
         ],
     )
-    # Store engine in the app state for access by dependency functions
-    app.state.db_engine = engine
 
-    # Include routers
-    app.include_router(health.router)
+    # Mount sub-applications
+    app.mount("/admin/v1", init_admin_v1_app(engine))
 
     return app
