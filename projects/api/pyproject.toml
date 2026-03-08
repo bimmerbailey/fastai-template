@@ -26,3 +26,6 @@ dependencies = [
 "../../bases/fastai/api" = "fastai/api"
 "../../components/fastai/database" = "fastai/database"
 "../../components/fastai/logger" = "fastai/logger"
+"../../components/fastai/utils" = "fastai/utils"
+"../../components/fastai/auth" = "fastai/auth"
+"../../components/fastai/users" = "fastai/users"
