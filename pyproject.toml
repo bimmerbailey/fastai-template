@@ -49,6 +49,11 @@ dev-mode-dirs = ["components", "bases", "development", "."]
 "components/fastai/utils" = "fastai/utils"
 
 
+[tool.pytest.ini_options]
+markers = [
+    "integration: tests that require a running database",
+]
+
 [tool.isort]
 profile = "black"
 known_first_party = ["fastai"]
