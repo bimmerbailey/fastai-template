@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from fastai.api_v1 import items
+from fastai.api_v1 import items, health
 
 
 def init_api_v1(engine: AsyncEngine) -> FastAPI:
@@ -21,5 +21,6 @@ def init_api_v1(engine: AsyncEngine) -> FastAPI:
     app.state.db_engine = engine
 
     app.include_router(items.router)
+    app.include_router(health.router)
 
     return app
