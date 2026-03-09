@@ -3,8 +3,8 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from starlette.responses import PlainTextResponse
 
-from fastai.utils.dependencies import SessionDep
 from fastai.database.core import health_check
+from fastai.utils.dependencies import SessionDep
 
 router = APIRouter(tags=["health"])
 
@@ -20,4 +20,4 @@ async def livez_health_check():
 @router.get("/readyz", response_class=JSONResponse)
 async def database_health_check(session: SessionDep):
     """Health check that verifies database connectivity."""
-    return health_check(session=session)
+    return await health_check(session=session)

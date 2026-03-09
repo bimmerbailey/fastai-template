@@ -19,4 +19,4 @@ async def livez_health_check():
 @router.get("/readyz", response_class=JSONResponse)
 async def database_health_check(session: SessionDep):
     """Health check that verifies database connectivity."""
-    return health_check(session=session)
+    return await health_check(session=session)
