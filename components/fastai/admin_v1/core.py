@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from fastai.admin_v1 import users, health
+from fastai.admin_v1 import health, users
 
 
 def init_admin_v1_app(engine: AsyncEngine) -> FastAPI:

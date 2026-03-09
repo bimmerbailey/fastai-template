@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from functools import partial
 
+import logfire
 import structlog.stdlib
 from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
@@ -24,10 +25,16 @@ async def lifespan(db_engine: AsyncEngine, app: FastAPI):
     logger.info("Shutting down api")
 
 
-def init_api(db_settings: DatabaseSettings |  None = None) -> FastAPI:
+def init_api(db_settings: DatabaseSettings | None = None) -> FastAPI:
     db_settings = db_settings or DatabaseSettings()
-    
+
     setup_api_logging()
+
+    # TODO: Setup jaeger to send to
+    logfire.configure(send_to_logfire=False)
+    logfire.instrument_pydantic_ai()
+    logfire.instrument_sqlalchemy()
+
     engine = create_db_engine(db_settings)
     app = FastAPI(
         lifespan=partial(lifespan, engine),
@@ -36,6 +43,7 @@ def init_api(db_settings: DatabaseSettings |  None = None) -> FastAPI:
             Middleware(LoggingMiddleware, logger=logger),
         ],
     )
+    logfire.instrument_fastapi(app=app)
 
     # Mount sub-applications
     app.mount("/admin/v1", init_admin_v1_app(engine))

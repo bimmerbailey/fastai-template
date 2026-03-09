@@ -195,3 +195,5 @@ The template includes Pydantic AI integration for building AI applications:
 - Integration tests should be marked "integration" and should not contain mocks
 - Integration test should be completed and passing before doing mocked tests
 - Always use absolute paths NEVER relative paths
+- Database query logic belongs on the model as classmethods/instance methods (Active Record pattern), not in calling code like agent tools or route handlers
+- Imports should be at the top of the file unless needed inline to avoid circular imports

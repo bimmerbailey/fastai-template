@@ -20,3 +20,4 @@ async def get_session(
 
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+EngineDep = Annotated[AsyncEngine, Depends(get_db_engine)]

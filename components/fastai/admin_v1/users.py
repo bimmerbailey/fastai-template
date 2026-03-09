@@ -4,9 +4,9 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from fastai.utils.dependencies import SessionDep
 from fastai.users.models import User
 from fastai.users.schemas import UserCreate, UserRead, UserUpdate
+from fastai.utils.dependencies import SessionDep
 
 router = APIRouter(prefix="/users", tags=["Users"])
 

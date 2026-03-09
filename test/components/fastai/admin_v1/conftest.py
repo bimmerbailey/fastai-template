@@ -13,7 +13,9 @@ from fastai.database.core import (
 
 
 @pytest_asyncio.fixture
-async def app(test_db_settings: DatabaseSettings, test_db_engine) -> AsyncGenerator[FastAPI, None]:
+async def app(
+    test_db_settings: DatabaseSettings, test_db_engine
+) -> AsyncGenerator[FastAPI, None]:
     """Create FastAPI test application."""
     application = init_admin_v1_app(test_db_engine)
     yield application

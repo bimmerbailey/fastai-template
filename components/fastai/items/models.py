@@ -4,7 +4,7 @@ import uuid as _uuid
 from decimal import Decimal
 from typing import Optional
 
-from sqlmodel import Column, Field, Numeric, String, select
+from sqlmodel import Column, Field, Numeric, String, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from fastai.items.schemas import ItemBase, ItemCreate, ItemUpdate
@@ -64,3 +64,39 @@ class Item(ItemBase, TimestampMixin, table=True):
         """Delete this item from the database."""
         await session.delete(self)
         await session.commit()
+
+    @classmethod
+    async def search_by_name(
+        cls, session: AsyncSession, query: str, limit: int = 10
+    ) -> list[Item]:
+        """Search for items whose name matches a query (case-insensitive).
+
+        Args:
+            session: The async database session.
+            query: A search term to match against item names.
+            limit: Maximum number of results to return.
+
+        Returns:
+            A list of matching items.
+        """
+        statement = (
+            select(cls)
+            .where(cls.name.ilike(f"%{query}%"))  # type: ignore[union-attr]
+            .limit(limit)
+        )
+        results = await session.exec(statement)
+        return list(results.all())
+
+    @classmethod
+    async def count(cls, session: AsyncSession) -> int:
+        """Get the total number of items in the database.
+
+        Args:
+            session: The async database session.
+
+        Returns:
+            The total item count.
+        """
+        statement = select(func.count()).select_from(cls)
+        result = await session.exec(statement)
+        return result.one()

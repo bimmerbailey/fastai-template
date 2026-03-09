@@ -1,4 +1,4 @@
-.PHONY: help install dev up down logs clean format lint check test build
+.PHONY: help install dev dev-local up down logs clean format lint check test build
 
 # Default target
 help:
@@ -35,6 +35,8 @@ help:
 	@echo "  poly-create-component      - Create component (NAME=component_name)"
 	@echo "  poly-create-base           - Create base (NAME=base_name)"
 	@echo "  poly-create-project        - Create project (NAME=project_name)"
+	@echo ""
+	@echo "  dev-local                  - Start API locally (no Docker), reads .env"
 	@echo ""
 	@echo "Database:"
 	@echo "  migrate-create             - Create migration (message=\"description\")"
@@ -125,6 +127,11 @@ poly-create-base:
 poly-create-project:
 	@if [ -z "$(NAME)" ]; then echo "Error: NAME is required. Usage: make poly-create-project NAME=project_name"; exit 1; fi
 	uv run poly create project --name $(NAME)
+
+# Local development (no Docker)
+dev-local:
+	@if [ -f .env ]; then set -a && . ./.env && set +a; fi && \
+	uv run uvicorn fastai.api:init_api --host 0.0.0.0 --port 8000 --reload --no-access-log --factory
 
 # Database migrations
 migrate-create:
