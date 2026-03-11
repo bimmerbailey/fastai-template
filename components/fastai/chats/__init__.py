@@ -1,3 +1,3 @@
-from fastai.chats import core, models, schemas
+from fastai.chats import models, schemas
 
-__all__ = ["core", "models", "schemas"]
+__all__ = ["models", "schemas"]

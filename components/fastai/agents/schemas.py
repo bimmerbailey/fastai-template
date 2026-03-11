@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import uuid
+
 from pydantic import BaseModel, Field
 
 
@@ -20,6 +22,16 @@ class ChatRequest(BaseModel):
         max_length=10000,
         description="The user message to send to the agent.",
     )
+    # TODO: Replace with authenticated user from request context once auth is implemented
+    user_id: uuid.UUID = Field(
+        description="The user sending the message.",
+    )
+    conversation_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "Continue an existing conversation. Omit to start a new conversation."
+        ),
+    )
 
 
 class ChatResponse(BaseModel):
@@ -27,4 +39,7 @@ class ChatResponse(BaseModel):
 
     message: str = Field(description="The agent's response message.")
     model: str = Field(description="The model used for this response.")
+    conversation_id: uuid.UUID = Field(
+        description="The conversation this message belongs to.",
+    )
     usage: ChatUsage | None = Field(default=None, description="Token usage statistics.")

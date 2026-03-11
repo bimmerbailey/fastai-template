@@ -2,10 +2,19 @@ from datetime import datetime, timezone
 
 import structlog.stdlib
 from pydantic_ai import Agent, ModelSettings, RunContext, UsageLimits
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+    TextPart,
+    UserPromptPart,
+)
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from fastai.agents.dependencies import AgentDeps
 from fastai.agents.settings import AgentSettings
+from fastai.chats.models import Message
+from fastai.chats.schemas import MessageRole
 from fastai.items import Item
 
 logger = structlog.stdlib.get_logger(__name__)
@@ -99,3 +108,27 @@ def get_usage_limits(settings: AgentSettings) -> UsageLimits:
         Configured usage limits for agent runs.
     """
     return UsageLimits(request_limit=settings.request_limit)
+
+
+def messages_to_history(messages: list[Message]) -> list[ModelMessage]:
+    """Convert persisted Message records to PydanticAI message history.
+
+    Each ``Message`` becomes either a ``ModelRequest`` (user) or a
+    ``ModelResponse`` (assistant) so that the agent receives full
+    conversational context.
+
+    Args:
+        messages: Database message records ordered by creation time.
+
+    Returns:
+        A list of ``ModelMessage`` objects suitable for
+        ``agent.run(message_history=...)``.
+    """
+    history: list[ModelMessage] = []
+    for msg in messages:
+        text = msg.content_text or ""
+        if msg.role == MessageRole.USER:
+            history.append(ModelRequest(parts=[UserPromptPart(content=text)]))
+        else:
+            history.append(ModelResponse(parts=[TextPart(content=text)]))
+    return history

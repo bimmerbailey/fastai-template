@@ -1,3 +1,4 @@
+import uuid
 from typing import AsyncGenerator
 
 import pytest
@@ -6,12 +7,16 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from fastai.agents.core import create_agent
 from fastai.agents.dependencies import AgentDeps
 from fastai.agents.settings import AgentSettings
 from fastai.api_v1 import init_api_v1
+from fastai.auth.core import PasswordService
 from fastai.database.core import DatabaseSettings
+from fastai.users.models import User
+from fastai.users.schemas import UserCreate
 
 
 @pytest.fixture
@@ -51,3 +56,21 @@ async def chat_client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
         transport=ASGITransport(app=app), base_url="http://testserver"
     ) as ac:
         yield ac
+
+
+@pytest_asyncio.fixture
+async def sample_user_id(test_db_session: AsyncSession) -> uuid.UUID:
+    """Create a sample user in the database and return its ID.
+
+    Needed because conversations have a foreign-key constraint on users.
+    """
+    hasher = PasswordService()
+    user_in = UserCreate(
+        first_name="Chat",
+        last_name="Tester",
+        email="chattester@example.com",
+        password="securepassword123",
+    )
+    user = await User.create(test_db_session, user_in, hasher=hasher)
+    assert user.id is not None
+    return user.id
