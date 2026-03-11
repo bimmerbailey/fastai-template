@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from fastai.agents.core import create_agent
 from fastai.agents.dependencies import AgentDeps
 from fastai.agents.settings import AgentSettings
-from fastai.api_v1 import chats, health, items
+from fastai.api_v1 import chats, conversations, health, items
 
 
 def init_api_v1(
@@ -42,5 +42,6 @@ def init_api_v1(
     app.include_router(items.router)
     app.include_router(health.router)
     app.include_router(chats.router)
+    app.include_router(conversations.router)
 
     return app
