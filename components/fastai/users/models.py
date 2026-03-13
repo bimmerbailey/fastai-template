@@ -1,21 +1,21 @@
 import uuid as _uuid
 from datetime import datetime, timedelta, timezone
 
+import structlog.stdlib
 from pydantic import AwareDatetime
 from sqlmodel import Column, DateTime, Field, String, select
 from sqlmodel.ext.asyncio.session import AsyncSession
-import structlog.stdlib
 
 from fastai.auth import AuthSettings
 from fastai.auth.core import PasswordService, password_service
-from fastai.users.schemas import AccountStatus, UserBase, UserCreate, UserUpdate
-from fastai.utils.models import TimestampMixin
 from fastai.users.exceptions import (
+    UserInvalidCredentials,
     UserLockedError,
     UserNotFoundError,
     UserStatusError,
-    UserInvalidCredentials,
 )
+from fastai.users.schemas import AccountStatus, UserBase, UserCreate, UserUpdate
+from fastai.utils.models import TimestampMixin
 
 logger = structlog.stdlib.get_logger(__name__)
 

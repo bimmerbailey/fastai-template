@@ -4,13 +4,12 @@ import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from pydantic import SecretStr
-from pydantic_ai import Agent, models
+from pydantic_ai import Agent
 
-
+from fastai.agents import AgentDeps, AgentSettings
 from fastai.api_v1 import init_api_v1
 from fastai.auth.settings import AuthSettings
 from fastai.database.core import DatabaseSettings
-from fastai.agents import AgentSettings, AgentDeps
 
 
 @pytest_asyncio.fixture

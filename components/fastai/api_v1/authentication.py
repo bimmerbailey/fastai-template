@@ -4,24 +4,24 @@ import uuid
 from typing import Annotated
 
 import structlog.stdlib
-from fastapi import APIRouter, Cookie, HTTPException, Request, Response, status, Depends
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from fastapi.params import Body
 from fastapi.security import OAuth2PasswordRequestForm
 
-from fastai.api_v1.dependencies import TokenServiceDep, AuthSettingsDep
+from fastai.api_v1.dependencies import AuthSettingsDep, TokenServiceDep
 from fastai.auth.models import RefreshToken
 from fastai.auth.schemas import TokenResponse
 from fastai.auth.settings import AuthSettings
 from fastai.auth.token_service import TokenError, TokenService
-from fastai.users.models import User
-from fastai.users.schemas import UserCreate
-from fastai.utils.dependencies import SessionDep
 from fastai.users.exceptions import (
+    UserInvalidCredentials,
     UserLockedError,
     UserNotFoundError,
     UserStatusError,
-    UserInvalidCredentials,
 )
+from fastai.users.models import User
+from fastai.users.schemas import UserCreate
+from fastai.utils.dependencies import SessionDep
 
 logger = structlog.stdlib.get_logger(__name__)
 

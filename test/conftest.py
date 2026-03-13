@@ -1,15 +1,16 @@
-from typing import AsyncGenerator, Generator
 import uuid
+from typing import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
+from pydantic_ai import Agent, models
+from pydantic_ai.models.test import TestModel
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
-from pydantic_ai import Agent, models
-from pydantic_ai.models.test import TestModel
 
-from fastai.agents import AgentSettings, create_agent, AgentDeps
+from fastai.agents import AgentDeps, AgentSettings, create_agent
+from fastai.auth import PasswordService
 from fastai.database.core import (
     DatabaseSettings,
     create_db_engine,
@@ -17,8 +18,6 @@ from fastai.database.core import (
     get_db_session,
 )
 from fastai.users import User, UserCreate
-from fastai.auth import PasswordService
-
 
 models.ALLOW_MODEL_REQUESTS = False
 

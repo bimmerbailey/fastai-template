@@ -201,7 +201,9 @@ async def test_chat_persists_user_and_assistant_messages(
     conversation_id = res.json()["conversation_id"]
 
     # Fetch messages via the conversations endpoint
-    msgs_res = await api_v1_client.get(f"{CONVERSATIONS_URL}/{conversation_id}/messages")
+    msgs_res = await api_v1_client.get(
+        f"{CONVERSATIONS_URL}/{conversation_id}/messages"
+    )
     assert msgs_res.status_code == 200
     messages = msgs_res.json()
 
@@ -233,7 +235,9 @@ async def test_chat_multi_turn_persists_all_messages(
         ),
     )
 
-    msgs_res = await api_v1_client.get(f"{CONVERSATIONS_URL}/{conversation_id}/messages")
+    msgs_res = await api_v1_client.get(
+        f"{CONVERSATIONS_URL}/{conversation_id}/messages"
+    )
     messages = msgs_res.json()
 
     # 2 turns × 2 messages (user + assistant) = 4 messages

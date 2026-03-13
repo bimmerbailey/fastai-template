@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from fastai.agents.core import create_agent
 from fastai.agents.dependencies import AgentDeps
 from fastai.agents.settings import AgentSettings
-from fastai.api_v1 import chats, conversations, health, items, authentication
+from fastai.api_v1 import authentication, chats, conversations, health, items
 from fastai.auth.settings import AuthSettings
 from fastai.auth.token_service import TokenService
 
