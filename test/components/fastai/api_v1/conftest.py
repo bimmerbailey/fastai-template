@@ -40,3 +40,15 @@ async def api_v1_client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
         transport=ASGITransport(app=app), base_url="http://testserver"
     ) as ac:
         yield ac
+
+
+@pytest_asyncio.fixture
+async def authenticated_client(
+    api_v1_client, create_user
+) -> AsyncGenerator[AsyncClient, None]:
+
+    user = await create_user(email="admin@example.com", password="password")
+    await api_v1_client.post(
+        "/auth/login", data={"email": user.email, "password": "password"}
+    )
+    yield api_v1_client

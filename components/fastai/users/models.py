@@ -1,15 +1,23 @@
-from __future__ import annotations
-
 import uuid as _uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from pydantic import AwareDatetime
 from sqlmodel import Column, DateTime, Field, String, select
 from sqlmodel.ext.asyncio.session import AsyncSession
+import structlog.stdlib
 
+from fastai.auth import AuthSettings
 from fastai.auth.core import PasswordService, password_service
 from fastai.users.schemas import AccountStatus, UserBase, UserCreate, UserUpdate
 from fastai.utils.models import TimestampMixin
+from fastai.users.exceptions import (
+    UserLockedError,
+    UserNotFoundError,
+    UserStatusError,
+    UserInvalidCredentials,
+)
+
+logger = structlog.stdlib.get_logger(__name__)
 
 
 class User(UserBase, TimestampMixin, table=True):
@@ -96,7 +104,7 @@ class User(UserBase, TimestampMixin, table=True):
         user_in: UserCreate,
         *,
         hasher: PasswordService = password_service,
-    ) -> User:
+    ) -> "User":
         """Create a new user with hashed password and persist to the database."""
         data = user_in.model_dump(exclude={"password"})
         data["password_hash"] = hasher.hash(user_in.password)
@@ -107,7 +115,7 @@ class User(UserBase, TimestampMixin, table=True):
         return user
 
     @classmethod
-    async def get(cls, session: AsyncSession, user_id: _uuid.UUID) -> User | None:
+    async def get(cls, session: AsyncSession, user_id: _uuid.UUID) -> "User | None":
         """Get a single user by ID. Excludes soft-deleted users."""
         user = await session.get(cls, user_id)
         if user is not None and user.deleted_at is not None:
@@ -115,7 +123,7 @@ class User(UserBase, TimestampMixin, table=True):
         return user
 
     @classmethod
-    async def get_by_email(cls, session: AsyncSession, email: str) -> User | None:
+    async def get_by_email(cls, session: AsyncSession, email: str) -> "User | None":
         """Get a single user by email. Excludes soft-deleted users."""
         statement = select(cls).where(
             cls.email == email,
@@ -132,7 +140,7 @@ class User(UserBase, TimestampMixin, table=True):
         limit: int = 100,
         *,
         include_deleted: bool = False,
-    ) -> list[User]:
+    ) -> "list[User]":
         """Get a paginated list of users. Excludes soft-deleted by default."""
         statement = select(cls)
         if not include_deleted:
@@ -149,7 +157,7 @@ class User(UserBase, TimestampMixin, table=True):
         user_in: UserUpdate,
         *,
         hasher: PasswordService = password_service,
-    ) -> User:
+    ) -> "User":
         """Update this user with partial data. Hashes password if provided."""
         update_data = user_in.model_dump(exclude_unset=True)
 
@@ -165,7 +173,7 @@ class User(UserBase, TimestampMixin, table=True):
         await session.refresh(self)
         return self
 
-    async def soft_delete(self, session: AsyncSession) -> User:
+    async def soft_delete(self, session: AsyncSession) -> "User":
         """Soft-delete this user by setting deleted_at timestamp."""
         self.deleted_at = datetime.now(tz=timezone.utc)
         self.is_active = False
@@ -196,3 +204,106 @@ class User(UserBase, TimestampMixin, table=True):
         if self.password_hash is None:
             return False
         return hasher.verify(password, self.password_hash)
+
+    @classmethod
+    async def login(
+        cls,
+        session: AsyncSession,
+        *,
+        email: str,
+        password: str,
+        auth_settings: AuthSettings,
+        ip_address: str | None = None,
+        hasher: PasswordService = password_service,
+    ) -> "User":
+        user = await cls.get_by_email(session, email)
+        if user is None:
+            raise UserNotFoundError("Invalid email or password.")
+
+        # Check account lockout
+        if user.is_locked:
+            logger.warning(
+                "Login attempt on locked account",
+                user_id=str(user.id),
+                locked_until=str(user.locked_until),
+            )
+            raise UserLockedError(
+                "Account is temporarily locked due to too many failed login attempts."
+            )
+
+        # Check account status
+        if not user.is_active or user.status == AccountStatus.SUSPENDED:
+            raise UserStatusError("Account is inactive or suspended.")
+
+        # Verify password
+        if not user.verify_password(password, hasher=hasher):
+            await user.record_login_failure(
+                session,
+                max_attempts=auth_settings.max_failed_login_attempts,
+                lockout_minutes=auth_settings.lockout_duration_minutes,
+            )
+            logger.warning(
+                "Failed login attempt",
+                user_id=str(user.id),
+                failed_count=user.failed_login_count,
+            )
+            raise UserInvalidCredentials("Invalid email or password.")
+
+        # Success — record and issue tokens
+        await user.record_login_success(session, ip_address=ip_address)
+
+        logger.info("User logged in", actor=str(user.email))
+        return user
+
+    # ── Login tracking ──
+
+    @property
+    def is_locked(self) -> bool:
+        """Whether the account is currently locked due to failed login attempts."""
+        if self.locked_until is None:
+            return False
+        return datetime.now(tz=timezone.utc) < self.locked_until
+
+    async def record_login_success(
+        self,
+        session: AsyncSession,
+        *,
+        ip_address: str | None = None,
+    ) -> "User":
+        """Record a successful login: update timestamps and reset failure count."""
+        self.last_login_at = datetime.now(tz=timezone.utc)
+        self.last_login_ip = ip_address
+        self.failed_login_count = 0
+        self.locked_until = None
+        session.add(self)
+        await session.commit()
+        await session.refresh(self)
+        return self
+
+    async def record_login_failure(
+        self,
+        session: AsyncSession,
+        *,
+        max_attempts: int = 5,
+        lockout_minutes: int = 30,
+    ) -> "User":
+        """Record a failed login attempt.
+
+        Increments ``failed_login_count`` and locks the account when the
+        threshold is reached.
+
+        Args:
+            session: AsyncSession
+            max_attempts: Number of consecutive failures before lockout.
+            lockout_minutes: How long the account stays locked, in minutes.
+        """
+        self.failed_login_count += 1
+        if self.failed_login_count >= max_attempts:
+            self.locked_until = datetime.now(tz=timezone.utc) + timedelta(
+                minutes=lockout_minutes
+            )
+            self.status = AccountStatus.LOCKED
+        session.add(self)
+        await session.commit()
+        await session.refresh(self)
+        return self
