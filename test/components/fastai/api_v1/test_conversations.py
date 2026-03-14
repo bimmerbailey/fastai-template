@@ -23,7 +23,7 @@ async def _create_conversation(
     **overrides: object,
 ) -> dict:
     """Helper – create a conversation and return the response body."""
-    payload = _make_conversation_payload(**overrides)  # type: ignore[arg-type]
+    payload = _make_conversation_payload(**overrides)  # pyright: ignore[reportArgumentType]
     res = await client.post(BASE_URL, json=payload)
     assert res.status_code == 201
     return res.json()
@@ -52,7 +52,7 @@ async def _create_message(
     **overrides: object,
 ) -> dict:
     """Helper – create a message and return the response body."""
-    payload = _make_message_payload(conversation_id=conversation_id, **overrides)  # type: ignore[arg-type]
+    payload = _make_message_payload(conversation_id=conversation_id, **overrides)  # pyright: ignore[reportArgumentType]
     res = await client.post(_messages_url(conversation_id), json=payload)
     assert res.status_code == 201
     return res.json()
@@ -427,11 +427,15 @@ async def test_delete_message_wrong_conversation(
     conv_b = await _create_conversation(authenticated_client, title="Conv B")
     msg = await _create_message(authenticated_client, conv_a["id"])
 
-    res = await authenticated_client.delete(f"{_messages_url(conv_b['id'])}/{msg['id']}")
+    res = await authenticated_client.delete(
+        f"{_messages_url(conv_b['id'])}/{msg['id']}"
+    )
     assert res.status_code == 404
 
     # Original message should still exist
-    get_res = await authenticated_client.get(f"{_messages_url(conv_a['id'])}/{msg['id']}")
+    get_res = await authenticated_client.get(
+        f"{_messages_url(conv_a['id'])}/{msg['id']}"
+    )
     assert get_res.status_code == 200
 
 

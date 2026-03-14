@@ -3,13 +3,12 @@ from dataclasses import dataclass, field
 
 import structlog
 from asgi_correlation_id.context import correlation_id
-from fastapi import FastAPI
-from starlette.types import Message, Receive, Scope, Send
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
 @dataclass
 class LoggingMiddleware:
-    app: FastAPI
+    app: ASGIApp
     logger: structlog.stdlib.BoundLogger = field(
         default_factory=lambda: structlog.stdlib.get_logger(__name__)
     )

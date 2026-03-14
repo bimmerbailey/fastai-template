@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, status
 from fastai.agents.core import get_usage_limits, messages_to_history
 from fastai.agents.dependencies import AgentDeps
 from fastai.agents.schemas import ChatRequest, ChatResponse, ChatUsage
-from fastai.api_v1.dependencies import AgentDep, AgentSettingsDep
+from fastai.api_v1.dependencies import AgentDep, AgentSettingsDep, CurrentUserDep
 from fastai.chats.models import Conversation, Message
 from fastai.chats.schemas import (
     ConversationCreate,
@@ -15,7 +15,6 @@ from fastai.chats.schemas import (
     MessageRole,
 )
 from fastai.utils.dependencies import EngineDep, SessionDep
-from fastai.api_v1.dependencies import CurrentUserDep
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -118,7 +117,7 @@ async def chat(
     # ── Auto-title on first message ──
     if needs_title:
         # Re-fetch the conversation since prior commits expired the object
-        conversation = await Conversation.get(session, conversation_id)  # type: ignore[assignment]
+        conversation = await Conversation.get(session, conversation_id)  # pyright: ignore[reportAssignmentType]
         await conversation.update(
             session,
             ConversationUpdate(title=_auto_title(chat_request.message)),

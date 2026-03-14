@@ -178,7 +178,7 @@ def setup_cli_logging(settings: LogSettings = LogSettings()):
 def build_processors(
     include_api: bool = False,
     include_cli: bool = False,
-    custom_processors: list[Processor] = None,
+    custom_processors: list[Processor] | None = None,
 ) -> list[Processor]:
     """
     Build a custom processor list by combining base processors with specific sets.

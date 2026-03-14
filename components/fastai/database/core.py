@@ -16,7 +16,7 @@ class DatabaseSettings(BaseSettings):
     port: int = 5432
     name: str = "fastai"
     user: str = "postgres"
-    password: SecretStr = "Password123!"
+    password: SecretStr = SecretStr("Password123!")
 
     @property
     def url(self) -> PostgresDsn:
@@ -26,7 +26,7 @@ class DatabaseSettings(BaseSettings):
                 f"postgresql+asyncpg://{self.user}:{self.password.get_secret_value()}@"
                 f"{self.hostname}:{self.port}/{self.name}"
             )
-        return PostgresDsn(os.environ.get("DATABASE_URL"))
+        return PostgresDsn(os.environ["DATABASE_URL"])
 
 
 logger = structlog.stdlib.get_logger(__name__)
@@ -58,7 +58,7 @@ async def get_db_session(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
 async def health_check(session: AsyncSession):
     try:
         # Simple query to test database connectivity
-        result = await session.exec(text("SELECT 1 as test"))
+        result = await session.exec(text("SELECT 1 as test"))  # pyright: ignore[reportCallIssue, reportArgumentType]
         row = result.fetchone()
 
         if row and row[0] == 1:

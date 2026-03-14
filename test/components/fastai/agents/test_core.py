@@ -11,7 +11,7 @@ models.ALLOW_MODEL_REQUESTS = False
 pytestmark = pytest.mark.integration
 
 
-def _extract_tool_names(result) -> list[str]:  # type: ignore[no-untyped-def]
+def _extract_tool_names(result) -> list[str]:  # pyright: ignore[reportUnknownParameterType]
     """Extract all tool call names from agent run messages."""
     tool_names: list[str] = []
     for msg in result.all_messages():

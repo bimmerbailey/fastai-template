@@ -1,5 +1,5 @@
 import uuid as _uuid
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import AwareDatetime
 from sqlalchemy import Enum as SAEnum
@@ -18,6 +18,9 @@ from fastai.chats.schemas import (
 from fastai.utils.fields import date_now
 from fastai.utils.models import TimestampMixin
 
+if TYPE_CHECKING:
+    from fastai.users import User
+
 # ── Conversation ──
 
 
@@ -28,7 +31,7 @@ class Conversation(ConversationBase, TimestampMixin, table=True):
     all its messages at the database level (passive_deletes).
     """
 
-    __tablename__ = "conversations"
+    __tablename__ = "conversations"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         # Composite index: satisfies WHERE user_id = ? ORDER BY created_at DESC
         # with INCLUDE columns for index-only scans on listing queries.
@@ -96,7 +99,7 @@ class Conversation(ConversationBase, TimestampMixin, table=True):
         statement = (
             select(cls)
             .where(cls.user_id == user_id)
-            .order_by(cls.created_at.desc())  # type: ignore[union-attr]
+            .order_by(cls.created_at.desc())  # pyright: ignore[reportAttributeAccessIssue]
             .offset(offset)
             .limit(limit)
         )
@@ -130,7 +133,7 @@ class Message(MessageBase, table=True):
     so only created_at is stored (no updated_at).
     """
 
-    __tablename__ = "messages"
+    __tablename__ = "messages"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         # Composite index: satisfies WHERE conversation_id = ? ORDER BY created_at
         Index(
@@ -144,7 +147,7 @@ class Message(MessageBase, table=True):
     conversation_id: _uuid.UUID = Field(
         foreign_key="conversations.id", ondelete="CASCADE"
     )
-    role: MessageRole = Field(  # type: ignore[assignment]
+    role: MessageRole = Field(  # pyright: ignore[reportAssignmentType]
         sa_column=Column(
             SAEnum(MessageRole, name="message_role", create_type=True),
             nullable=False,
@@ -157,7 +160,7 @@ class Message(MessageBase, table=True):
     # ── Timestamp (no updated_at — messages are immutable) ──
     created_at: AwareDatetime = Field(
         default_factory=date_now,
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # pyright: ignore[reportArgumentType]
         sa_column_kwargs={"server_default": func.now(), "nullable": False},
     )
 
@@ -194,7 +197,7 @@ class Message(MessageBase, table=True):
         statement = (
             select(cls)
             .where(cls.conversation_id == conversation_id)
-            .order_by(cls.created_at)  # type: ignore[arg-type]
+            .order_by(cls.created_at)  # pyright: ignore[reportArgumentType]
             .offset(offset)
             .limit(limit)
         )

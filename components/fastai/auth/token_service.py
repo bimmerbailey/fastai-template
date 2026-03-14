@@ -34,8 +34,8 @@ class TokenService:
     SHA-256 hashes in the database for server-side revocation.
     """
 
-    def __init__(self, settings: AuthSettings | None = None) -> None:
-        self._settings = settings or AuthSettings()
+    def __init__(self, settings: AuthSettings) -> None:
+        self._settings = settings
         self._key = OctKey.import_key(settings.secret_key.get_secret_value())
 
     def create_access_token(

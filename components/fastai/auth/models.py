@@ -27,7 +27,7 @@ class UserOAuthAccount(TimestampMixin, SQLModel, table=True):
     The (oauth_provider, oauth_subject) pair is unique across the table.
     """
 
-    __tablename__ = "user_oauth_accounts"
+    __tablename__ = "user_oauth_accounts"  # pyright: ignore[reportAssignmentType]
     __table_args__ = (
         UniqueConstraint(
             "oauth_provider",
@@ -151,7 +151,7 @@ class RefreshToken(SQLModel, table=True):
     tokens for a given user without relying solely on JWT expiration.
     """
 
-    __tablename__ = "refresh_tokens"
+    __tablename__ = "refresh_tokens"  # pyright: ignore[reportAssignmentType]
 
     id: _uuid.UUID = Field(default_factory=_uuid.uuid4, primary_key=True)
     user_id: _uuid.UUID = Field(
@@ -164,16 +164,16 @@ class RefreshToken(SQLModel, table=True):
         description="SHA-256 hex digest of the refresh token JWT.",
     )
     expires_at: AwareDatetime = Field(
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # pyright: ignore[reportArgumentType]
         nullable=False,
     )
     revoked_at: AwareDatetime | None = Field(
         default=None,
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # pyright: ignore[reportArgumentType]
     )
     created_at: AwareDatetime = Field(
         default_factory=lambda: datetime.now(tz=timezone.utc),
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # pyright: ignore[reportArgumentType]
     )
 
     # ── CRUD helpers ──
@@ -230,7 +230,7 @@ class RefreshToken(SQLModel, table=True):
         now = datetime.now(tz=timezone.utc)
         statement = select(cls).where(
             cls.user_id == user_id,
-            cls.revoked_at.is_(None),  # type: ignore[union-attr]
+            cls.revoked_at.is_(None),  # pyright: ignore[reportOptionalMemberAccess, reportAttributeAccessIssue]
         )
         results = await session.exec(statement)
         tokens = list(results.all())

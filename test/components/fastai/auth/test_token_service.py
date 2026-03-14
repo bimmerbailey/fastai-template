@@ -2,6 +2,7 @@ import uuid
 from datetime import timedelta, timezone
 
 import pytest
+from pydantic import SecretStr
 
 from fastai.auth.settings import AuthSettings
 from fastai.auth.token_service import TokenError, TokenService
@@ -9,7 +10,9 @@ from fastai.auth.token_service import TokenError, TokenService
 
 @pytest.fixture
 def auth_settings() -> AuthSettings:
-    return AuthSettings(secret_key="test-secret-key-at-least-32-characters-long")
+    return AuthSettings(
+        secret_key=SecretStr("test-secret-key-at-least-32-characters-long")
+    )
 
 
 @pytest.fixture
@@ -131,7 +134,7 @@ class TestDecodeAccessToken:
         }
         expired_token = jose_jwt.encode({"alg": "HS256"}, claims, key)
 
-        settings = AuthSettings(secret_key=secret)
+        settings = AuthSettings(secret_key=SecretStr(secret))
         service = TokenService(settings)
 
         with pytest.raises(TokenError, match="expired"):
@@ -144,7 +147,7 @@ class TestDecodeAccessToken:
 
         # Create a different service with a different secret
         other_settings = AuthSettings(
-            secret_key="different-secret-key-at-least-32-chars-long"
+            secret_key=SecretStr("different-secret-key-at-least-32-chars-long")
         )
         other_service = TokenService(other_settings)
 
@@ -172,7 +175,7 @@ class TestDecodeRefreshToken:
         token = token_service.create_refresh_token(user_id)
 
         other_settings = AuthSettings(
-            secret_key="different-secret-key-at-least-32-chars-long"
+            secret_key=SecretStr("different-secret-key-at-least-32-chars-long")
         )
         other_service = TokenService(other_settings)
 

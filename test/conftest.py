@@ -1,4 +1,3 @@
-import uuid
 from typing import AsyncGenerator, Generator
 
 import pytest

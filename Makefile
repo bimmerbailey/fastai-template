@@ -1,4 +1,4 @@
-.PHONY: help install dev dev-local up down logs clean format lint check test build
+.PHONY: help install dev dev-local up down logs clean format lint type-check test build
 
 # Default target
 help:
@@ -17,7 +17,7 @@ help:
 	@echo "Code Quality:"
 	@echo "  format                     - Format and sort imports"
 	@echo "  lint                       - Run all code quality checks (format + type + polylith)"
-	@echo "  check                      - Run type checking only"
+	@echo "  type-check                 - Run type checking only"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test                       - Run all tests"
@@ -66,7 +66,7 @@ format:
 	uv run isort .
 
 # Code quality and style targets
-.PHONY: style style-check import-sort poly-check lint
+.PHONY: style style-check import-sort poly-check type-check lint
 
 style-check:
 	uv run ruff check
@@ -77,7 +77,10 @@ import-sort:
 format-check:
 	uv run ruff format --check
 
-lint: style-check import-sort poly-check format-check
+type-check:
+	uv run pyright
+
+lint: style-check import-sort poly-check format-check type-check
 
 # Test targets
 .PHONY: test test-watch test-coverage test-fast

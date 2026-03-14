@@ -33,7 +33,7 @@ def init_api_v1(
             from environment variables if not provided.
     """
     settings = agent_settings or AgentSettings()
-    auth = auth_settings or AuthSettings()
+    auth = auth_settings or AuthSettings()  # pyright: ignore[reportCallIssue]  # reads secret_key from env
 
     app = FastAPI(
         title="API v1",

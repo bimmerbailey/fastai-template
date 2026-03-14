@@ -14,7 +14,7 @@ from fastai.utils.models import TimestampMixin
 class Item(ItemBase, TimestampMixin, table=True):
     """Database table model for items."""
 
-    __tablename__ = "items"
+    __tablename__ = "items"  # pyright: ignore[reportAssignmentType]
 
     id: _uuid.UUID = Field(default_factory=_uuid.uuid4, primary_key=True)
     name: str = Field(sa_column=Column(String, nullable=False))
@@ -81,7 +81,7 @@ class Item(ItemBase, TimestampMixin, table=True):
         """
         statement = (
             select(cls)
-            .where(cls.name.ilike(f"%{query}%"))  # type: ignore[union-attr]
+            .where(cls.name.ilike(f"%{query}%"))  # pyright: ignore[reportAttributeAccessIssue]
             .limit(limit)
         )
         results = await session.exec(statement)

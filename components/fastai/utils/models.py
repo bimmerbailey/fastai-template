@@ -13,12 +13,12 @@ class TimestampMixin(SQLModel):
 
     created_at: AwareDatetime = Field(
         default_factory=date_now,
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # pyright: ignore[reportArgumentType]
         sa_column_kwargs={"server_default": func.now(), "nullable": False},
     )
     updated_at: AwareDatetime = Field(
         default_factory=date_now,
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # pyright: ignore[reportArgumentType]
         sa_column_kwargs={
             "server_default": func.now(),
             "onupdate": func.now(),

@@ -1,5 +1,6 @@
 import uuid as _uuid
 from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING
 
 import structlog.stdlib
 from pydantic import AwareDatetime
@@ -16,6 +17,9 @@ from fastai.users.exceptions import (
 )
 from fastai.users.schemas import AccountStatus, UserBase, UserCreate, UserUpdate
 from fastai.utils.models import TimestampMixin
+
+if TYPE_CHECKING:
+    from fastai.chats.models import Conversation
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -34,7 +38,7 @@ class User(UserBase, TimestampMixin, table=True):
     - OIDC account linking (via UserOAuthAccount in auth component)
     """
 
-    __tablename__ = "users"
+    __tablename__ = "users"  # pyright: ignore[reportAssignmentType]
 
     # ── Primary key ──
     id: _uuid.UUID = Field(default_factory=_uuid.uuid4, primary_key=True)
@@ -55,13 +59,13 @@ class User(UserBase, TimestampMixin, table=True):
     is_email_verified: bool = Field(default=False)
     email_verified_at: AwareDatetime | None = Field(
         default=None,
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # pyright: ignore[reportArgumentType]
     )
 
     # ── Login tracking ──
     last_login_at: AwareDatetime | None = Field(
         default=None,
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # pyright: ignore[reportArgumentType]
     )
     last_login_ip: str | None = Field(default=None)
 
@@ -69,19 +73,19 @@ class User(UserBase, TimestampMixin, table=True):
     failed_login_count: int = Field(default=0)
     locked_until: AwareDatetime | None = Field(
         default=None,
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # pyright: ignore[reportArgumentType]
     )
 
     # ── Soft delete ──
     deleted_at: AwareDatetime | None = Field(
         default=None,
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # pyright: ignore[reportArgumentType]
     )
 
     # ── Terms of Service ──
     tos_accepted_at: AwareDatetime | None = Field(
         default=None,
-        sa_type=DateTime(timezone=True),
+        sa_type=DateTime(timezone=True),  # pyright: ignore[reportArgumentType]
     )
 
     # ── MFA / 2FA ──
@@ -133,7 +137,7 @@ class User(UserBase, TimestampMixin, table=True):
         """Get a single user by email. Excludes soft-deleted users."""
         statement = select(cls).where(
             cls.email == email,
-            cls.deleted_at.is_(None),  # type: ignore[union-attr]
+            cls.deleted_at.is_(None),  # pyright: ignore[reportOptionalMemberAccess, reportAttributeAccessIssue]
         )
         results = await session.exec(statement)
         return results.first()
@@ -151,7 +155,7 @@ class User(UserBase, TimestampMixin, table=True):
         statement = select(cls)
         if not include_deleted:
             statement = statement.where(
-                cls.deleted_at.is_(None)  # type: ignore[union-attr]
+                cls.deleted_at.is_(None)  # pyright: ignore[reportOptionalMemberAccess, reportAttributeAccessIssue]
             )
         statement = statement.offset(offset).limit(limit)
         results = await session.exec(statement)
