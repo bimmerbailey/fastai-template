@@ -4,6 +4,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
 
+from fastai.api_v1.dependencies import CurrentUserDep
 from fastai.chats.models import Conversation, Message
 from fastai.chats.schemas import (
     ConversationCreate,
@@ -23,6 +24,7 @@ router = APIRouter(prefix="/conversations", tags=["Conversations"])
 @router.get("", response_model=list[ConversationRead])
 async def list_conversations(
     session: SessionDep,
+    _: CurrentUserDep,
     user_id: uuid.UUID = Query(..., description="Filter conversations by user ID"),
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
@@ -36,6 +38,7 @@ async def list_conversations(
 @router.get("/{conversation_id}", response_model=ConversationRead)
 async def get_conversation(
     session: SessionDep,
+    _: CurrentUserDep,
     conversation_id: uuid.UUID,
 ) -> Conversation:
     """Get a single conversation by ID."""
@@ -51,6 +54,7 @@ async def get_conversation(
 @router.post("", response_model=ConversationRead, status_code=status.HTTP_201_CREATED)
 async def create_conversation(
     session: SessionDep,
+    _: CurrentUserDep,
     conv_in: ConversationCreate,
 ) -> Conversation:
     """Create a new conversation."""
@@ -60,6 +64,7 @@ async def create_conversation(
 @router.patch("/{conversation_id}", response_model=ConversationRead)
 async def update_conversation(
     session: SessionDep,
+    _: CurrentUserDep,
     conversation_id: uuid.UUID,
     conv_in: ConversationUpdate,
 ) -> Conversation:
@@ -76,6 +81,7 @@ async def update_conversation(
 @router.delete("/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_conversation(
     session: SessionDep,
+    _: CurrentUserDep,
     conversation_id: uuid.UUID,
 ) -> None:
     """Delete a conversation and all its messages (cascaded)."""
@@ -98,6 +104,7 @@ async def delete_conversation(
 )
 async def list_messages(
     session: SessionDep,
+    _: CurrentUserDep,
     conversation_id: uuid.UUID,
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=500),
@@ -121,6 +128,7 @@ async def list_messages(
 )
 async def get_message(
     session: SessionDep,
+    _: CurrentUserDep,
     conversation_id: uuid.UUID,
     message_id: uuid.UUID,
 ) -> Message:
@@ -142,6 +150,7 @@ async def get_message(
 )
 async def create_message(
     session: SessionDep,
+    _: CurrentUserDep,
     conversation_id: uuid.UUID,
     msg_in: MessageCreate,
 ) -> Message:
@@ -167,6 +176,7 @@ async def create_message(
 )
 async def delete_message(
     session: SessionDep,
+    _: CurrentUserDep,
     conversation_id: uuid.UUID,
     message_id: uuid.UUID,
 ) -> None:

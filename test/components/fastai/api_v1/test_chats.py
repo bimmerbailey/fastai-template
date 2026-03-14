@@ -26,10 +26,10 @@ def _chat_payload(user_id: uuid.UUID, **overrides: object) -> dict:
 
 @pytest.mark.asyncio
 async def test_chat_returns_response(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """POST /chat returns a valid ChatResponse with conversation_id."""
-    res = await api_v1_client.post(BASE_URL, json=_chat_payload(sample_user_id))
+    res = await authenticated_client.post(BASE_URL, json=_chat_payload(sample_user_id))
 
     assert res.status_code == 200
     body = res.json()
@@ -45,10 +45,10 @@ async def test_chat_returns_response(
 
 @pytest.mark.asyncio
 async def test_chat_returns_usage_stats(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """POST /chat includes token usage statistics."""
-    res = await api_v1_client.post(
+    res = await authenticated_client.post(
         BASE_URL,
         json=_chat_payload(sample_user_id, message="What time is it?"),
     )
@@ -65,10 +65,10 @@ async def test_chat_returns_usage_stats(
 
 @pytest.mark.asyncio
 async def test_chat_response_model_field(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """Response includes the model identifier."""
-    res = await api_v1_client.post(
+    res = await authenticated_client.post(
         BASE_URL, json=_chat_payload(sample_user_id, message="Hi")
     )
 
@@ -84,10 +84,10 @@ async def test_chat_response_model_field(
 
 @pytest.mark.asyncio
 async def test_chat_empty_message_rejected(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """POST /chat rejects empty messages with 422."""
-    res = await api_v1_client.post(
+    res = await authenticated_client.post(
         BASE_URL, json=_chat_payload(sample_user_id, message="")
     )
     assert res.status_code == 422
@@ -95,20 +95,20 @@ async def test_chat_empty_message_rejected(
 
 @pytest.mark.asyncio
 async def test_chat_missing_message_rejected(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """POST /chat rejects requests without a message field."""
-    res = await api_v1_client.post(BASE_URL, json={"user_id": str(sample_user_id)})
+    res = await authenticated_client.post(BASE_URL, json={"user_id": str(sample_user_id)})
     assert res.status_code == 422
 
 
 @pytest.mark.asyncio
 async def test_chat_message_too_long_rejected(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """POST /chat rejects messages exceeding max length."""
     long_message = "x" * 10001
-    res = await api_v1_client.post(
+    res = await authenticated_client.post(
         BASE_URL,
         json=_chat_payload(sample_user_id, message=long_message),
     )
@@ -117,10 +117,10 @@ async def test_chat_message_too_long_rejected(
 
 @pytest.mark.asyncio
 async def test_chat_missing_user_id_rejected(
-    api_v1_client: AsyncClient,
+    authenticated_client: AsyncClient,
 ) -> None:
     """POST /chat rejects requests without user_id."""
-    res = await api_v1_client.post(BASE_URL, json={"message": "Hi"})
+    res = await authenticated_client.post(BASE_URL, json={"message": "Hi"})
     assert res.status_code == 422
 
 
@@ -131,34 +131,34 @@ async def test_chat_missing_user_id_rejected(
 
 @pytest.mark.asyncio
 async def test_chat_creates_new_conversation(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """When conversation_id is omitted, a new conversation is created."""
-    res = await api_v1_client.post(BASE_URL, json=_chat_payload(sample_user_id))
+    res = await authenticated_client.post(BASE_URL, json=_chat_payload(sample_user_id))
 
     assert res.status_code == 200
     conversation_id = res.json()["conversation_id"]
 
     # Verify the conversation exists via the conversations endpoint
-    conv_res = await api_v1_client.get(f"{CONVERSATIONS_URL}/{conversation_id}")
+    conv_res = await authenticated_client.get(f"{CONVERSATIONS_URL}/{conversation_id}")
     assert conv_res.status_code == 200
     assert conv_res.json()["user_id"] == str(sample_user_id)
 
 
 @pytest.mark.asyncio
 async def test_chat_continues_existing_conversation(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """When conversation_id is provided, messages are added to it."""
     # First message – creates conversation
-    res1 = await api_v1_client.post(
+    res1 = await authenticated_client.post(
         BASE_URL, json=_chat_payload(sample_user_id, message="First")
     )
     assert res1.status_code == 200
     conversation_id = res1.json()["conversation_id"]
 
     # Second message – continues conversation
-    res2 = await api_v1_client.post(
+    res2 = await authenticated_client.post(
         BASE_URL,
         json=_chat_payload(
             sample_user_id,
@@ -172,11 +172,11 @@ async def test_chat_continues_existing_conversation(
 
 @pytest.mark.asyncio
 async def test_chat_invalid_conversation_id_returns_404(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """Providing a non-existent conversation_id returns 404."""
     fake_id = str(uuid.uuid4())
-    res = await api_v1_client.post(
+    res = await authenticated_client.post(
         BASE_URL,
         json=_chat_payload(sample_user_id, conversation_id=fake_id),
     )
@@ -190,10 +190,10 @@ async def test_chat_invalid_conversation_id_returns_404(
 
 @pytest.mark.asyncio
 async def test_chat_persists_user_and_assistant_messages(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """Both the user message and assistant response are persisted."""
-    res = await api_v1_client.post(
+    res = await authenticated_client.post(
         BASE_URL,
         json=_chat_payload(sample_user_id, message="What is 2+2?"),
     )
@@ -201,7 +201,7 @@ async def test_chat_persists_user_and_assistant_messages(
     conversation_id = res.json()["conversation_id"]
 
     # Fetch messages via the conversations endpoint
-    msgs_res = await api_v1_client.get(
+    msgs_res = await authenticated_client.get(
         f"{CONVERSATIONS_URL}/{conversation_id}/messages"
     )
     assert msgs_res.status_code == 200
@@ -216,17 +216,17 @@ async def test_chat_persists_user_and_assistant_messages(
 
 @pytest.mark.asyncio
 async def test_chat_multi_turn_persists_all_messages(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """Multiple turns accumulate messages in the conversation."""
     # Turn 1
-    res1 = await api_v1_client.post(
+    res1 = await authenticated_client.post(
         BASE_URL, json=_chat_payload(sample_user_id, message="Turn 1")
     )
     conversation_id = res1.json()["conversation_id"]
 
     # Turn 2
-    await api_v1_client.post(
+    await authenticated_client.post(
         BASE_URL,
         json=_chat_payload(
             sample_user_id,
@@ -235,7 +235,7 @@ async def test_chat_multi_turn_persists_all_messages(
         ),
     )
 
-    msgs_res = await api_v1_client.get(
+    msgs_res = await authenticated_client.get(
         f"{CONVERSATIONS_URL}/{conversation_id}/messages"
     )
     messages = msgs_res.json()
@@ -253,32 +253,32 @@ async def test_chat_multi_turn_persists_all_messages(
 
 @pytest.mark.asyncio
 async def test_chat_auto_titles_new_conversation(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """A new conversation gets auto-titled from the first user message."""
-    res = await api_v1_client.post(
+    res = await authenticated_client.post(
         BASE_URL,
         json=_chat_payload(sample_user_id, message="Tell me about Python"),
     )
     conversation_id = res.json()["conversation_id"]
 
-    conv_res = await api_v1_client.get(f"{CONVERSATIONS_URL}/{conversation_id}")
+    conv_res = await authenticated_client.get(f"{CONVERSATIONS_URL}/{conversation_id}")
     assert conv_res.json()["title"] == "Tell me about Python"
 
 
 @pytest.mark.asyncio
 async def test_chat_auto_title_truncates_long_messages(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """Auto-title is truncated to ~100 chars with ellipsis for long messages."""
     long_msg = "A" * 200
-    res = await api_v1_client.post(
+    res = await authenticated_client.post(
         BASE_URL,
         json=_chat_payload(sample_user_id, message=long_msg),
     )
     conversation_id = res.json()["conversation_id"]
 
-    conv_res = await api_v1_client.get(f"{CONVERSATIONS_URL}/{conversation_id}")
+    conv_res = await authenticated_client.get(f"{CONVERSATIONS_URL}/{conversation_id}")
     title = conv_res.json()["title"]
     # 100 chars + ellipsis character
     assert len(title) == 101
@@ -287,18 +287,18 @@ async def test_chat_auto_title_truncates_long_messages(
 
 @pytest.mark.asyncio
 async def test_chat_does_not_overwrite_existing_title(
-    api_v1_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
 ) -> None:
     """Subsequent messages do not change the conversation title."""
     # First message sets the title
-    res1 = await api_v1_client.post(
+    res1 = await authenticated_client.post(
         BASE_URL,
         json=_chat_payload(sample_user_id, message="Original title"),
     )
     conversation_id = res1.json()["conversation_id"]
 
     # Second message should not overwrite
-    await api_v1_client.post(
+    await authenticated_client.post(
         BASE_URL,
         json=_chat_payload(
             sample_user_id,
@@ -307,5 +307,5 @@ async def test_chat_does_not_overwrite_existing_title(
         ),
     )
 
-    conv_res = await api_v1_client.get(f"{CONVERSATIONS_URL}/{conversation_id}")
+    conv_res = await authenticated_client.get(f"{CONVERSATIONS_URL}/{conversation_id}")
     assert conv_res.json()["title"] == "Original title"

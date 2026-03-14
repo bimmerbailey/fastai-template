@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 import structlog.stdlib
 from pydantic import AwareDatetime
-from sqlmodel import Column, DateTime, Field, String, select
+from sqlmodel import Column, DateTime, Field, Relationship, String, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from fastai.auth import AuthSettings
@@ -93,6 +93,12 @@ class User(UserBase, TimestampMixin, table=True):
     mfa_recovery_codes: str | None = Field(
         default=None,
         description="JSON array of recovery codes. Encrypted at rest.",
+    )
+
+    # ── Relationships ──
+    conversations: list["Conversation"] = Relationship(  # noqa: F821
+        back_populates="user",
+        sa_relationship_kwargs={"lazy": "raise"},
     )
 
     # ── CRUD methods ──

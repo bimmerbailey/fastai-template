@@ -49,6 +49,10 @@ class Conversation(ConversationBase, TimestampMixin, table=True):
     )
 
     # ── Relationships ──
+    user: "User" = Relationship(  # noqa: F821
+        back_populates="conversations",
+        sa_relationship_kwargs={"lazy": "raise"},
+    )
     messages: list["Message"] = Relationship(
         back_populates="conversation",
         sa_relationship_kwargs={
