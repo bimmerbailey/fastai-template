@@ -42,7 +42,7 @@ class Conversation(ConversationBase, TimestampMixin, table=True):
         ),
     )
 
-    id: _uuid.UUID | None = Field(default_factory=_uuid.uuid4, primary_key=True)
+    id: _uuid.UUID = Field(default_factory=_uuid.uuid4, primary_key=True)
     user_id: _uuid.UUID = Field(foreign_key="users.id")
     title: str | None = Field(
         default=None, sa_column=Column(String(500), nullable=True)
@@ -140,7 +140,7 @@ class Message(MessageBase, table=True):
         ),
     )
 
-    id: _uuid.UUID | None = Field(default_factory=_uuid.uuid4, primary_key=True)
+    id: _uuid.UUID = Field(default_factory=_uuid.uuid4, primary_key=True)
     conversation_id: _uuid.UUID = Field(
         foreign_key="conversations.id", ondelete="CASCADE"
     )

@@ -16,7 +16,7 @@ class Item(ItemBase, TimestampMixin, table=True):
 
     __tablename__ = "items"
 
-    id: _uuid.UUID | None = Field(default_factory=_uuid.uuid4, primary_key=True)
+    id: _uuid.UUID = Field(default_factory=_uuid.uuid4, primary_key=True)
     name: str = Field(sa_column=Column(String, nullable=False))
     cost: Optional[Decimal] = Field(
         default=None,

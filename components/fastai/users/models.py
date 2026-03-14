@@ -37,7 +37,7 @@ class User(UserBase, TimestampMixin, table=True):
     __tablename__ = "users"
 
     # ── Primary key ──
-    id: _uuid.UUID | None = Field(default_factory=_uuid.uuid4, primary_key=True)
+    id: _uuid.UUID = Field(default_factory=_uuid.uuid4, primary_key=True)
 
     # ── Authentication ──
     password_hash: str | None = Field(
