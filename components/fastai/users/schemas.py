@@ -30,6 +30,7 @@ class UserCreate(UserBase):
     """Schema for creating a new user. Accepts password, no id/timestamps."""
 
     password: str
+    is_admin: bool = False
 
     @field_validator("password")
     @classmethod

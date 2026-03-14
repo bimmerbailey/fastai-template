@@ -23,13 +23,25 @@ def _make_item_payload(
     }
 
 
-# ── CREATE ──
+# ── AUTH ──
 
 
 @pytest.mark.asyncio
-async def test_create_item(api_v1_client: AsyncClient) -> None:
+async def test_unauthenticated_request_returns_401(
+    api_v1_client: AsyncClient,
+) -> None:
+    """All item endpoints require authentication."""
+    res = await api_v1_client.get(BASE_URL)
+    assert res.status_code == 401
+
+
+# ── CREATE (admin only) ──
+
+
+@pytest.mark.asyncio
+async def test_create_item(admin_client: AsyncClient) -> None:
     payload = _make_item_payload()
-    res = await api_v1_client.post(BASE_URL, json=payload)
+    res = await admin_client.post(BASE_URL, json=payload)
 
     assert res.status_code == 201
     body = res.json()
@@ -43,10 +55,10 @@ async def test_create_item(api_v1_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_item_minimal(api_v1_client: AsyncClient) -> None:
+async def test_create_item_minimal(admin_client: AsyncClient) -> None:
     """Only name is required."""
     payload = {"name": "Minimal"}
-    res = await api_v1_client.post(BASE_URL, json=payload)
+    res = await admin_client.post(BASE_URL, json=payload)
 
     assert res.status_code == 201
     body = res.json()
@@ -57,21 +69,30 @@ async def test_create_item_minimal(api_v1_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_item_missing_name(api_v1_client: AsyncClient) -> None:
+async def test_create_item_missing_name(admin_client: AsyncClient) -> None:
     """Name is required — omitting it should return 422."""
-    res = await api_v1_client.post(BASE_URL, json={"quantity": 5})
+    res = await admin_client.post(BASE_URL, json={"quantity": 5})
     assert res.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_create_item_forbidden_for_regular_user(
+    authenticated_client: AsyncClient,
+) -> None:
+    """Non-admin users cannot create items."""
+    res = await authenticated_client.post(BASE_URL, json=_make_item_payload())
+    assert res.status_code == 403
 
 
 # ── READ (single) ──
 
 
 @pytest.mark.asyncio
-async def test_get_item(api_v1_client: AsyncClient) -> None:
-    create_res = await api_v1_client.post(BASE_URL, json=_make_item_payload())
+async def test_get_item(admin_client: AsyncClient) -> None:
+    create_res = await admin_client.post(BASE_URL, json=_make_item_payload())
     item_id = create_res.json()["id"]
 
-    res = await api_v1_client.get(f"{BASE_URL}/{item_id}")
+    res = await admin_client.get(f"{BASE_URL}/{item_id}")
 
     assert res.status_code == 200
     body = res.json()
@@ -80,9 +101,9 @@ async def test_get_item(api_v1_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_item_not_found(api_v1_client: AsyncClient) -> None:
+async def test_get_item_not_found(authenticated_client: AsyncClient) -> None:
     fake_id = str(uuid.uuid4())
-    res = await api_v1_client.get(f"{BASE_URL}/{fake_id}")
+    res = await authenticated_client.get(f"{BASE_URL}/{fake_id}")
     assert res.status_code == 404
 
 
@@ -90,11 +111,11 @@ async def test_get_item_not_found(api_v1_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_items(api_v1_client: AsyncClient) -> None:
-    await api_v1_client.post(BASE_URL, json=_make_item_payload(name="Item A"))
-    await api_v1_client.post(BASE_URL, json=_make_item_payload(name="Item B"))
+async def test_list_items(admin_client: AsyncClient) -> None:
+    await admin_client.post(BASE_URL, json=_make_item_payload(name="Item A"))
+    await admin_client.post(BASE_URL, json=_make_item_payload(name="Item B"))
 
-    res = await api_v1_client.get(BASE_URL)
+    res = await admin_client.get(BASE_URL)
 
     assert res.status_code == 200
     items = res.json()
@@ -105,13 +126,13 @@ async def test_list_items(api_v1_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_items_pagination(api_v1_client: AsyncClient) -> None:
+async def test_list_items_pagination(admin_client: AsyncClient) -> None:
     for i in range(5):
-        await api_v1_client.post(
+        await admin_client.post(
             BASE_URL, json=_make_item_payload(name=f"Page Item {i}")
         )
 
-    res = await api_v1_client.get(BASE_URL, params={"offset": 0, "limit": 2})
+    res = await admin_client.get(BASE_URL, params={"offset": 0, "limit": 2})
 
     assert res.status_code == 200
     assert len(res.json()) == 2
@@ -121,11 +142,11 @@ async def test_list_items_pagination(api_v1_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_update_item(api_v1_client: AsyncClient) -> None:
-    create_res = await api_v1_client.post(BASE_URL, json=_make_item_payload())
+async def test_update_item(admin_client: AsyncClient) -> None:
+    create_res = await admin_client.post(BASE_URL, json=_make_item_payload())
     item_id = create_res.json()["id"]
 
-    res = await api_v1_client.patch(
+    res = await admin_client.patch(
         f"{BASE_URL}/{item_id}",
         json={"name": "Updated Widget", "quantity": 99},
     )
@@ -140,11 +161,11 @@ async def test_update_item(api_v1_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_update_item_partial(api_v1_client: AsyncClient) -> None:
-    create_res = await api_v1_client.post(BASE_URL, json=_make_item_payload())
+async def test_update_item_partial(admin_client: AsyncClient) -> None:
+    create_res = await admin_client.post(BASE_URL, json=_make_item_payload())
     item_id = create_res.json()["id"]
 
-    res = await api_v1_client.patch(
+    res = await admin_client.patch(
         f"{BASE_URL}/{item_id}",
         json={"description": "New description"},
     )
@@ -158,49 +179,59 @@ async def test_update_item_partial(api_v1_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_update_item_not_found(api_v1_client: AsyncClient) -> None:
+async def test_update_item_not_found(authenticated_client: AsyncClient) -> None:
     fake_id = str(uuid.uuid4())
-    res = await api_v1_client.patch(
+    res = await authenticated_client.patch(
         f"{BASE_URL}/{fake_id}",
         json={"name": "Ghost"},
     )
     assert res.status_code == 404
 
 
-# ── DELETE ──
+# ── DELETE (admin only) ──
 
 
 @pytest.mark.asyncio
-async def test_delete_item(api_v1_client: AsyncClient) -> None:
-    create_res = await api_v1_client.post(BASE_URL, json=_make_item_payload())
+async def test_delete_item(admin_client: AsyncClient) -> None:
+    create_res = await admin_client.post(BASE_URL, json=_make_item_payload())
     item_id = create_res.json()["id"]
 
-    res = await api_v1_client.delete(f"{BASE_URL}/{item_id}")
+    res = await admin_client.delete(f"{BASE_URL}/{item_id}")
     assert res.status_code == 204
 
     # Item should no longer be accessible
-    get_res = await api_v1_client.get(f"{BASE_URL}/{item_id}")
+    get_res = await admin_client.get(f"{BASE_URL}/{item_id}")
     assert get_res.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_delete_item_not_found(api_v1_client: AsyncClient) -> None:
+async def test_delete_item_not_found(admin_client: AsyncClient) -> None:
     fake_id = str(uuid.uuid4())
-    res = await api_v1_client.delete(f"{BASE_URL}/{fake_id}")
+    res = await admin_client.delete(f"{BASE_URL}/{fake_id}")
     assert res.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_deleted_item_excluded_from_list(
-    api_v1_client: AsyncClient,
+async def test_delete_item_forbidden_for_regular_user(
+    authenticated_client: AsyncClient,
 ) -> None:
-    create_res = await api_v1_client.post(
+    """Non-admin users cannot delete items."""
+    fake_id = str(uuid.uuid4())
+    res = await authenticated_client.delete(f"{BASE_URL}/{fake_id}")
+    assert res.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_deleted_item_excluded_from_list(
+    admin_client: AsyncClient,
+) -> None:
+    create_res = await admin_client.post(
         BASE_URL, json=_make_item_payload(name="Delete Me")
     )
     item_id = create_res.json()["id"]
 
-    await api_v1_client.delete(f"{BASE_URL}/{item_id}")
+    await admin_client.delete(f"{BASE_URL}/{item_id}")
 
-    list_res = await api_v1_client.get(BASE_URL)
+    list_res = await admin_client.get(BASE_URL)
     ids = [i["id"] for i in list_res.json()]
     assert item_id not in ids

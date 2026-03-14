@@ -68,13 +68,18 @@ def create_user(test_db_session: AsyncSession, password_service: PasswordService
         password: str | None = None,
         first_name: str | None = None,
         last_name: str | None = None,
+        admin: bool = False,
     ) -> User:
         email = email or "testuser@example.com"
         password = password or "securepassword123"
         first_name = first_name or "Test"
         last_name = last_name or "User"
         to_create = UserCreate(
-            email=email, password=password, first_name=first_name, last_name=last_name
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            is_admin=admin,
         )
         return await User.create(session=test_db_session, user_in=to_create)
 

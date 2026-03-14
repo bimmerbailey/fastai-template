@@ -41,13 +41,36 @@ async def api_v1_client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
         yield ac
 
 
+async def _login_client(client: AsyncClient, email: str, password: str) -> AsyncClient:
+    """Log in and set the Authorization header on the client."""
+    res = await client.post(
+        "/auth/login", data={"username": email, "password": password}
+    )
+    assert res.status_code == 200, f"Login failed: {res.text}"
+    token = res.json()["access_token"]
+    client.headers["Authorization"] = f"Bearer {token}"
+    return client
+
+
 @pytest_asyncio.fixture
 async def authenticated_client(
-    api_v1_client, create_user
+    api_v1_client: AsyncClient, create_user
 ) -> AsyncGenerator[AsyncClient, None]:
-
-    user = await create_user(email="admin@example.com", password="password")
-    await api_v1_client.post(
-        "/auth/login", data={"email": user.email, "password": "password"}
+    """Client authenticated as a regular (non-admin) user."""
+    user = await create_user(
+        email="user@example.com", password="securepassword123", admin=False
     )
+    await _login_client(api_v1_client, user.email, "securepassword123")
+    yield api_v1_client
+
+
+@pytest_asyncio.fixture
+async def admin_client(
+    api_v1_client: AsyncClient, create_user, test_db_session
+) -> AsyncGenerator[AsyncClient, None]:
+    """Client authenticated as an admin user."""
+    user = await create_user(
+        email="admin@example.com", password="securepassword123", admin=True
+    )
+    await _login_client(api_v1_client, user.email, "securepassword123")
     yield api_v1_client
