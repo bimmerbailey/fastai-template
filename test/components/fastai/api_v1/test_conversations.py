@@ -10,10 +10,9 @@ BASE_URL = "/conversations"
 
 def _make_conversation_payload(
     *,
-    user_id: str,
     title: str | None = "Test conversation",
 ) -> dict:
-    payload: dict = {"user_id": user_id}
+    payload: dict = {}
     if title is not None:
         payload["title"] = title
     return payload
@@ -21,11 +20,10 @@ def _make_conversation_payload(
 
 async def _create_conversation(
     client: AsyncClient,
-    user_id: str,
     **overrides: object,
 ) -> dict:
     """Helper – create a conversation and return the response body."""
-    payload = _make_conversation_payload(user_id=user_id, **overrides)  # type: ignore[arg-type]
+    payload = _make_conversation_payload(**overrides)  # type: ignore[arg-type]
     res = await client.post(BASE_URL, json=payload)
     assert res.status_code == 201
     return res.json()
@@ -70,13 +68,12 @@ async def _create_message(
 
 @pytest.mark.asyncio
 async def test_create_conversation(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    user_id = str(sample_user_id)
-    body = await _create_conversation(authenticated_client, user_id)
+    body = await _create_conversation(authenticated_client)
 
     assert body["title"] == "Test conversation"
-    assert body["user_id"] == user_id
+    assert body["user_id"] is not None
     assert "id" in body
     assert "created_at" in body
     assert "updated_at" in body
@@ -84,14 +81,13 @@ async def test_create_conversation(
 
 @pytest.mark.asyncio
 async def test_create_conversation_no_title(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
     """Title is optional – should default to null."""
-    user_id = str(sample_user_id)
-    body = await _create_conversation(authenticated_client, user_id, title=None)
+    body = await _create_conversation(authenticated_client, title=None)
 
     assert body["title"] is None
-    assert body["user_id"] == user_id
+    assert body["user_id"] is not None
 
 
 # ── READ (single) ──
@@ -99,10 +95,9 @@ async def test_create_conversation_no_title(
 
 @pytest.mark.asyncio
 async def test_get_conversation(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    user_id = str(sample_user_id)
-    created = await _create_conversation(authenticated_client, user_id)
+    created = await _create_conversation(authenticated_client)
     conv_id = created["id"]
 
     res = await authenticated_client.get(f"{BASE_URL}/{conv_id}")
@@ -124,11 +119,11 @@ async def test_get_conversation_not_found(authenticated_client: AsyncClient) -> 
 
 @pytest.mark.asyncio
 async def test_list_conversations(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    user_id = str(sample_user_id)
-    await _create_conversation(authenticated_client, user_id, title="Conv A")
-    await _create_conversation(authenticated_client, user_id, title="Conv B")
+    conv_a = await _create_conversation(authenticated_client, title="Conv A")
+    await _create_conversation(authenticated_client, title="Conv B")
+    user_id = conv_a["user_id"]
 
     res = await authenticated_client.get(BASE_URL, params={"user_id": user_id})
 
@@ -149,11 +144,12 @@ async def test_list_conversations_requires_user_id(
 
 @pytest.mark.asyncio
 async def test_list_conversations_pagination(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    user_id = str(sample_user_id)
-    for i in range(5):
-        await _create_conversation(authenticated_client, user_id, title=f"Page Conv {i}")
+    conv = await _create_conversation(authenticated_client, title="Page Conv 0")
+    user_id = conv["user_id"]
+    for i in range(1, 5):
+        await _create_conversation(authenticated_client, title=f"Page Conv {i}")
 
     res = await authenticated_client.get(
         BASE_URL, params={"user_id": user_id, "offset": 0, "limit": 2}
@@ -168,10 +164,9 @@ async def test_list_conversations_pagination(
 
 @pytest.mark.asyncio
 async def test_update_conversation(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    user_id = str(sample_user_id)
-    created = await _create_conversation(authenticated_client, user_id)
+    created = await _create_conversation(authenticated_client)
     conv_id = created["id"]
 
     res = await authenticated_client.patch(
@@ -182,7 +177,7 @@ async def test_update_conversation(
     assert res.status_code == 200
     body = res.json()
     assert body["title"] == "Renamed"
-    assert body["user_id"] == user_id
+    assert body["user_id"] == created["user_id"]
 
 
 @pytest.mark.asyncio
@@ -200,10 +195,9 @@ async def test_update_conversation_not_found(authenticated_client: AsyncClient) 
 
 @pytest.mark.asyncio
 async def test_delete_conversation(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    user_id = str(sample_user_id)
-    created = await _create_conversation(authenticated_client, user_id)
+    created = await _create_conversation(authenticated_client)
     conv_id = created["id"]
 
     res = await authenticated_client.delete(f"{BASE_URL}/{conv_id}")
@@ -222,11 +216,11 @@ async def test_delete_conversation_not_found(authenticated_client: AsyncClient) 
 
 @pytest.mark.asyncio
 async def test_deleted_conversation_excluded_from_list(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    user_id = str(sample_user_id)
-    created = await _create_conversation(authenticated_client, user_id, title="Delete Me")
+    created = await _create_conversation(authenticated_client, title="Delete Me")
     conv_id = created["id"]
+    user_id = created["user_id"]
 
     await authenticated_client.delete(f"{BASE_URL}/{conv_id}")
 
@@ -245,9 +239,9 @@ async def test_deleted_conversation_excluded_from_list(
 
 @pytest.mark.asyncio
 async def test_create_message(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    conv = await _create_conversation(authenticated_client, str(sample_user_id))
+    conv = await _create_conversation(authenticated_client)
     conv_id = conv["id"]
 
     body = await _create_message(authenticated_client, conv_id)
@@ -261,9 +255,9 @@ async def test_create_message(
 
 @pytest.mark.asyncio
 async def test_create_message_assistant_role(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    conv = await _create_conversation(authenticated_client, str(sample_user_id))
+    conv = await _create_conversation(authenticated_client)
     conv_id = conv["id"]
 
     body = await _create_message(
@@ -286,10 +280,10 @@ async def test_create_message_conversation_not_found(
 
 @pytest.mark.asyncio
 async def test_create_message_conversation_id_mismatch(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
     """Body conversation_id must match the URL path parameter."""
-    conv = await _create_conversation(authenticated_client, str(sample_user_id))
+    conv = await _create_conversation(authenticated_client)
     conv_id = conv["id"]
 
     other_id = str(uuid.uuid4())
@@ -304,9 +298,9 @@ async def test_create_message_conversation_id_mismatch(
 
 @pytest.mark.asyncio
 async def test_get_message(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    conv = await _create_conversation(authenticated_client, str(sample_user_id))
+    conv = await _create_conversation(authenticated_client)
     conv_id = conv["id"]
     msg = await _create_message(authenticated_client, conv_id)
     msg_id = msg["id"]
@@ -320,9 +314,9 @@ async def test_get_message(
 
 @pytest.mark.asyncio
 async def test_get_message_not_found(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    conv = await _create_conversation(authenticated_client, str(sample_user_id))
+    conv = await _create_conversation(authenticated_client)
     conv_id = conv["id"]
     fake_id = str(uuid.uuid4())
 
@@ -332,12 +326,11 @@ async def test_get_message_not_found(
 
 @pytest.mark.asyncio
 async def test_get_message_wrong_conversation(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
     """A message that belongs to a different conversation should 404."""
-    user_id = str(sample_user_id)
-    conv_a = await _create_conversation(authenticated_client, user_id, title="Conv A")
-    conv_b = await _create_conversation(authenticated_client, user_id, title="Conv B")
+    conv_a = await _create_conversation(authenticated_client, title="Conv A")
+    conv_b = await _create_conversation(authenticated_client, title="Conv B")
     msg = await _create_message(authenticated_client, conv_a["id"])
 
     res = await authenticated_client.get(f"{_messages_url(conv_b['id'])}/{msg['id']}")
@@ -349,9 +342,9 @@ async def test_get_message_wrong_conversation(
 
 @pytest.mark.asyncio
 async def test_list_messages(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    conv = await _create_conversation(authenticated_client, str(sample_user_id))
+    conv = await _create_conversation(authenticated_client)
     conv_id = conv["id"]
     await _create_message(authenticated_client, conv_id, content_text="First")
     await _create_message(
@@ -379,9 +372,9 @@ async def test_list_messages_conversation_not_found(
 
 @pytest.mark.asyncio
 async def test_list_messages_pagination(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    conv = await _create_conversation(authenticated_client, str(sample_user_id))
+    conv = await _create_conversation(authenticated_client)
     conv_id = conv["id"]
     for i in range(5):
         await _create_message(authenticated_client, conv_id, content_text=f"Msg {i}")
@@ -399,9 +392,9 @@ async def test_list_messages_pagination(
 
 @pytest.mark.asyncio
 async def test_delete_message(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    conv = await _create_conversation(authenticated_client, str(sample_user_id))
+    conv = await _create_conversation(authenticated_client)
     conv_id = conv["id"]
     msg = await _create_message(authenticated_client, conv_id)
     msg_id = msg["id"]
@@ -415,9 +408,9 @@ async def test_delete_message(
 
 @pytest.mark.asyncio
 async def test_delete_message_not_found(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    conv = await _create_conversation(authenticated_client, str(sample_user_id))
+    conv = await _create_conversation(authenticated_client)
     conv_id = conv["id"]
     fake_id = str(uuid.uuid4())
 
@@ -427,12 +420,11 @@ async def test_delete_message_not_found(
 
 @pytest.mark.asyncio
 async def test_delete_message_wrong_conversation(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
     """Cannot delete a message via a different conversation's URL."""
-    user_id = str(sample_user_id)
-    conv_a = await _create_conversation(authenticated_client, user_id, title="Conv A")
-    conv_b = await _create_conversation(authenticated_client, user_id, title="Conv B")
+    conv_a = await _create_conversation(authenticated_client, title="Conv A")
+    conv_b = await _create_conversation(authenticated_client, title="Conv B")
     msg = await _create_message(authenticated_client, conv_a["id"])
 
     res = await authenticated_client.delete(f"{_messages_url(conv_b['id'])}/{msg['id']}")
@@ -445,9 +437,9 @@ async def test_delete_message_wrong_conversation(
 
 @pytest.mark.asyncio
 async def test_deleted_message_excluded_from_list(
-    authenticated_client: AsyncClient, sample_user_id: uuid.UUID
+    authenticated_client: AsyncClient,
 ) -> None:
-    conv = await _create_conversation(authenticated_client, str(sample_user_id))
+    conv = await _create_conversation(authenticated_client)
     conv_id = conv["id"]
     msg = await _create_message(authenticated_client, conv_id)
     msg_id = msg["id"]

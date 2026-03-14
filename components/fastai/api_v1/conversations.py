@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastai.api_v1.dependencies import CurrentUserDep
 from fastai.chats.models import Conversation, Message
 from fastai.chats.schemas import (
+    ConversationBase,
     ConversationCreate,
     ConversationRead,
     ConversationUpdate,
@@ -54,11 +55,13 @@ async def get_conversation(
 @router.post("", response_model=ConversationRead, status_code=status.HTTP_201_CREATED)
 async def create_conversation(
     session: SessionDep,
-    _: CurrentUserDep,
-    conv_in: ConversationCreate,
+    user: CurrentUserDep,
+    conv_in: ConversationBase,
 ) -> Conversation:
     """Create a new conversation."""
-    return await Conversation.create(session, conv_in)
+    return await Conversation.create(
+        session, ConversationCreate(user_id=user.id, **conv_in.model_dump())
+    )
 
 
 @router.patch("/{conversation_id}", response_model=ConversationRead)

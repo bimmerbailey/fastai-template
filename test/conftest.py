@@ -86,18 +86,6 @@ def create_user(test_db_session: AsyncSession, password_service: PasswordService
     return _create
 
 
-@pytest_asyncio.fixture
-async def sample_user_id(create_user) -> uuid.UUID:
-    """Create a sample user in the database and return its ID.
-
-    This is needed for conversation tests because conversations have a
-    foreign-key constraint on the users table.
-    """
-    user = await create_user()
-    assert user.id is not None
-    return user.id
-
-
 @pytest.fixture
 def agent_settings() -> AgentSettings:
     """Agent settings for testing."""
