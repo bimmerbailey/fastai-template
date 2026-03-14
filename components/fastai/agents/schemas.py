@@ -22,10 +22,6 @@ class ChatRequest(BaseModel):
         max_length=10000,
         description="The user message to send to the agent.",
     )
-    # TODO: Replace with authenticated user from request context once auth is implemented
-    user_id: uuid.UUID = Field(
-        description="The user sending the message.",
-    )
     conversation_id: uuid.UUID | None = Field(
         default=None,
         description=(

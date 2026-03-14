@@ -15,6 +15,7 @@ from fastai.chats.schemas import (
     MessageRole,
 )
 from fastai.utils.dependencies import EngineDep, SessionDep
+from fastai.api_v1.dependencies import CurrentUserDep
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -33,6 +34,7 @@ def _auto_title(text: str) -> str:
 
 @router.post("", response_model=ChatResponse)
 async def chat(
+    user: CurrentUserDep,
     chat_request: ChatRequest,
     agent: AgentDep,
     settings: AgentSettingsDep,
@@ -42,13 +44,8 @@ async def chat(
     """Send a message to the AI chat agent and receive a response.
 
     If ``conversation_id`` is provided the message is appended to that
-    conversation and the full history is sent to the model.  Otherwise a
+    conversation and the full history is sent to the model.  Otherwise, a
     new conversation is created automatically.
-
-    .. note::
-        ``user_id`` is currently passed in the request body. Once
-        authentication is implemented it should be extracted from the
-        authenticated request context instead.
     """
     logger.info(
         "Chat request received",
@@ -71,7 +68,7 @@ async def chat(
     else:
         conversation = await Conversation.create(
             session,
-            ConversationCreate(user_id=chat_request.user_id),
+            ConversationCreate(user_id=user.id),
         )
         # Newly created conversations always need a title
         needs_title = True

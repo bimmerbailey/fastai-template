@@ -1,6 +1,7 @@
 import uuid
 from typing import Annotated
 
+import structlog.contextvars
 from fastapi import Depends, HTTPException, Request, Security, status
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from pydantic_ai import Agent
@@ -126,6 +127,8 @@ async def get_scoped_user(
                 headers={"WWW-Authenticate": authenticate_value},
             )
 
+    structlog.contextvars.bind_contextvars(actor=user.id)
+    # TODO: Think about returning a plain BaseModel instead of a data model
     return user
 
 
