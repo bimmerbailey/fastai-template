@@ -75,7 +75,8 @@ async def _issue_tokens(
     and set the refresh token as an HttpOnly cookie."""
     assert user.id is not None
 
-    access_token = token_service.create_access_token(user.id, is_admin=user.is_admin)
+    scopes = ["admin"] if user.is_admin else []
+    access_token = token_service.create_access_token(user.id, scopes=scopes)
     refresh_token = token_service.create_refresh_token(user.id)
 
     # Decode the refresh token to get its expiry for DB storage
@@ -134,7 +135,7 @@ async def login(
     session: SessionDep,
     auth_settings: AuthSettingsDep,
     token_service: TokenServiceDep,
-    credentials: OAuth2PasswordRequestForm = Depends(),
+    credentials: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> TokenResponse:
     """Authenticate with email and password, returning an access token.
 

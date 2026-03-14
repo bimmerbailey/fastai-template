@@ -23,7 +23,7 @@ class TokenPayload(SQLModel):
     type: str = Field(description="Token type: 'access' or 'refresh'.")
     exp: datetime = Field(description="Expiration timestamp.")
     iat: datetime = Field(description="Issued-at timestamp.")
-    is_admin: bool = Field(default=False, description="Whether the user is an admin.")
+    scopes: list[str] = Field(default_factory=list, description="OAuth2 scopes granted to this token.")
 
 
 class TokenResponse(SQLModel):

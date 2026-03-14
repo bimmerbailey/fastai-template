@@ -35,21 +35,21 @@ class TestCreateAccessToken:
     def test_token_contains_correct_claims(
         self, token_service: TokenService, user_id: uuid.UUID
     ) -> None:
-        token = token_service.create_access_token(user_id, is_admin=True)
+        token = token_service.create_access_token(user_id, scopes=["admin"])
         payload = token_service.decode_access_token(token)
 
         assert payload.sub == str(user_id)
         assert payload.type == "access"
-        assert payload.is_admin is True
+        assert payload.scopes == ["admin"]
         assert payload.iat is not None
         assert payload.exp is not None
 
-    def test_default_is_admin_false(
+    def test_default_scopes_empty(
         self, token_service: TokenService, user_id: uuid.UUID
     ) -> None:
         token = token_service.create_access_token(user_id)
         payload = token_service.decode_access_token(token)
-        assert payload.is_admin is False
+        assert payload.scopes == []
 
     def test_token_expires_in_configured_minutes(
         self,
@@ -84,7 +84,7 @@ class TestCreateRefreshToken:
 
         assert payload.sub == str(user_id)
         assert payload.type == "refresh"
-        assert payload.is_admin is False
+        assert payload.scopes == []
 
     def test_token_expires_in_configured_days(
         self,
@@ -125,7 +125,7 @@ class TestDecodeAccessToken:
         claims = {
             "sub": str(user_id),
             "type": "access",
-            "is_admin": False,
+            "scopes": [],
             "iat": now - timedelta(hours=2),
             "exp": now - timedelta(hours=1),
         }

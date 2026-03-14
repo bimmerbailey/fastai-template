@@ -1,8 +1,8 @@
 import uuid
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Depends, HTTPException, Request, Security, status
+from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from pydantic_ai import Agent
 
 from fastai.agents.dependencies import AgentDeps
@@ -12,7 +12,13 @@ from fastai.auth.token_service import TokenError, TokenService
 from fastai.users.models import User
 from fastai.utils.dependencies import SessionDep
 
-bearer_scheme = HTTPBearer()
+security_scheme = OAuth2PasswordBearer(
+    tokenUrl="/auth/login",
+    scopes={
+        "admin": "Full administrative access.",
+    },
+    auto_error=False,
+)
 
 
 def get_agent(request: Request) -> Agent[AgentDeps, str]:
@@ -42,12 +48,19 @@ def get_token_service(request: Request) -> TokenService:
 async def get_current_user(
     session: SessionDep,
     token_service: TokenService = Depends(get_token_service),
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    token: str | None = Depends(security_scheme),
 ) -> User:
     """Extract and validate the access token from the Authorization header,
     then return the corresponding user."""
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing access token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     try:
-        payload = token_service.decode_access_token(credentials.credentials)
+        payload = token_service.decode_access_token(token=token)
     except TokenError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -66,8 +79,59 @@ async def get_current_user(
     return user
 
 
+async def get_scoped_user(
+    security_scopes: SecurityScopes,
+    session: SessionDep,
+    token_service: TokenService = Depends(get_token_service),
+    token: str | None = Depends(security_scheme),
+) -> User:
+    """Extract and validate the access token, checking OAuth2 scopes.
+
+    When used via ``Security(..., scopes=[...])``, the required scopes are
+    checked against the scopes embedded in the JWT.
+    """
+    authenticate_value = "Bearer"
+    if security_scopes.scopes:
+        authenticate_value += f' scope="{security_scopes.scope_str}"'
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing access token.",
+            headers={"WWW-Authenticate": authenticate_value},
+        )
+
+    try:
+        payload = token_service.decode_access_token(token=token)
+    except TokenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=exc.detail,
+            headers={"WWW-Authenticate": authenticate_value},
+        )
+
+    user = await User.get(session, uuid.UUID(payload.sub))
+    if user is None or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive.",
+            headers={"WWW-Authenticate": authenticate_value},
+        )
+
+    for scope in security_scopes.scopes:
+        if scope not in payload.scopes:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions.",
+                headers={"WWW-Authenticate": authenticate_value},
+            )
+
+    return user
+
+
 AgentDep = Annotated[Agent[AgentDeps, str], Depends(get_agent)]
 AgentSettingsDep = Annotated[AgentSettings, Depends(get_agent_settings)]
 AuthSettingsDep = Annotated[AuthSettings, Depends(get_auth_settings)]
 TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]
-CurrentUserDep = Annotated[User, Depends(get_current_user)]
+CurrentUserDep = Annotated[User, Security(get_scoped_user)]
+CurrentAdminDep = Annotated[User, Security(get_scoped_user, scopes=["admin"])]

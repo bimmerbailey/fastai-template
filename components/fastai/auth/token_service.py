@@ -38,14 +38,16 @@ class TokenService:
         self._settings = settings or AuthSettings()
         self._key = OctKey.import_key(settings.secret_key.get_secret_value())
 
-    def create_access_token(self, user_id: uuid.UUID, *, is_admin: bool = False) -> str:
+    def create_access_token(
+        self, user_id: uuid.UUID, *, scopes: list[str] | None = None
+    ) -> str:
         """Create a short-lived access token."""
         now = datetime.now(tz=timezone.utc)
         claims = {
             "jti": str(uuid.uuid4()),
             "sub": str(user_id),
             "type": "access",
-            "is_admin": is_admin,
+            "scopes": scopes or [],
             "iat": now,
             "exp": now + timedelta(minutes=self._settings.access_token_expire_minutes),
         }
@@ -59,7 +61,7 @@ class TokenService:
             "jti": str(uuid.uuid4()),
             "sub": str(user_id),
             "type": "refresh",
-            "is_admin": False,
+            "scopes": [],
             "iat": now,
             "exp": now + timedelta(days=self._settings.refresh_token_expire_days),
         }
@@ -111,7 +113,7 @@ class TokenService:
             type=decoded.claims["type"],
             exp=datetime.fromtimestamp(decoded.claims["exp"], tz=timezone.utc),
             iat=datetime.fromtimestamp(decoded.claims["iat"], tz=timezone.utc),
-            is_admin=decoded.claims.get("is_admin", False),
+            scopes=decoded.claims.get("scopes", []),
         )
 
     @staticmethod
