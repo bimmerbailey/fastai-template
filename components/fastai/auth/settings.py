@@ -1,17 +1,19 @@
 from typing import Literal
 
 from pydantic import Field, SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import SettingsConfigDict
+
+from fastai.utils.settings import FastAISettings
 
 
-class AuthSettings(BaseSettings):
+class AuthSettings(FastAISettings):
     """JWT authentication settings.
 
     All values can be overridden via environment variables prefixed
     with ``AUTH_`` (e.g. ``AUTH_SECRET_KEY``, ``AUTH_ALGORITHM``).
     """
 
-    model_config = SettingsConfigDict(frozen=True, env_prefix="AUTH_")
+    model_config = SettingsConfigDict(env_prefix="FASTAI_AUTH_")
 
     secret_key: SecretStr = Field(
         ...,

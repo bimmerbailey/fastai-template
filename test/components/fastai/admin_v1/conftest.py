@@ -8,13 +8,13 @@ from httpx import ASGITransport, AsyncClient
 
 from fastai.admin_v1.core import init_admin_v1_app
 from fastai.database.core import (
-    DatabaseSettings,
+    PostgresSettings,
 )
 
 
 @pytest_asyncio.fixture
 async def app(
-    test_db_settings: DatabaseSettings, test_db_engine
+    test_db_settings: PostgresSettings, test_db_engine
 ) -> AsyncGenerator[FastAPI, None]:
     """Create FastAPI test application."""
     application = init_admin_v1_app(test_db_engine)

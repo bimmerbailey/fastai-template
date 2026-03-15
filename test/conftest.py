@@ -11,7 +11,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from fastai.agents import AgentDeps, AgentSettings, create_agent
 from fastai.auth import PasswordService
 from fastai.database.core import (
-    DatabaseSettings,
+    PostgresSettings,
     create_db_engine,
     destroy_engine,
     get_db_session,
@@ -22,14 +22,15 @@ models.ALLOW_MODEL_REQUESTS = False
 
 
 @pytest.fixture
-def test_db_settings() -> DatabaseSettings:
+def test_db_settings(monkeypatch) -> PostgresSettings:
     """Database settings for testing with in-memory database."""
-    return DatabaseSettings(name="test_fastai")
+    monkeypatch.setenv("FASTAI_POSTGRES_NAME", "test_fastai")
+    return PostgresSettings()  # pyright: ignore[reportCallIssue]
 
 
 @pytest_asyncio.fixture
 async def test_db_engine(
-    test_db_settings: DatabaseSettings,
+    test_db_settings: PostgresSettings,
 ) -> AsyncGenerator[AsyncEngine, None]:
     """Create a test database engine."""
     engine = create_db_engine(test_db_settings)

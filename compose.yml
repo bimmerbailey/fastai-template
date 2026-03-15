@@ -9,9 +9,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    env_file:
+      - path: example.env
+        required: true
+      - path: .env
+        required: false
     environment:
-      - DATABASE_HOSTNAME=postgres
-      - AUTH_SECRET_KEY=dev-only-secret-key-change-in-production-min-32-chars
+      - FASTAI_POSTGRES_HOSTNAME=postgres
+      # TODO: Figure out local ai/ollama with this
     ports:
       - "8000:8000"
     volumes:
@@ -57,3 +62,4 @@ services:
 volumes:
   postgres:
   pgadmin:
+  ollama:

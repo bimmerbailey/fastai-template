@@ -28,8 +28,10 @@ from enum import StrEnum
 
 import structlog
 from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import SettingsConfigDict
 from structlog.types import EventDict, Processor
+
+from fastai.utils.settings import FastAISettings
 
 
 class LogLevel(StrEnum):
@@ -41,8 +43,8 @@ class LogLevel(StrEnum):
     FATAL = "FATAL"
 
 
-class LogSettings(BaseSettings):
-    model_config = SettingsConfigDict(frozen=True, env_prefix="LOG_")
+class LogSettings(FastAISettings):
+    model_config = SettingsConfigDict(env_prefix="LOG_")
 
     json_format: bool = Field(default=False)
     level: LogLevel = Field(default=LogLevel.INFO)

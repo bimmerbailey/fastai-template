@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fastai.admin_v1 import init_admin_v1_app
 from fastai.api_v1 import init_api_v1
-from fastai.database import DatabaseSettings, create_db_engine, destroy_engine
+from fastai.database import PostgresSettings, create_db_engine, destroy_engine
 from fastai.logger.core import setup_api_logging
 from fastai.logger.middleware import LoggingMiddleware
 
@@ -25,8 +25,8 @@ async def lifespan(db_engine: AsyncEngine, app: FastAPI):
     logger.info("Shutting down api")
 
 
-def init_api(db_settings: DatabaseSettings | None = None) -> FastAPI:
-    db_settings = db_settings or DatabaseSettings()
+def init_api(db_settings: PostgresSettings | None = None) -> FastAPI:
+    db_settings = db_settings or PostgresSettings()  # pyright: ignore[reportCallIssue]
 
     setup_api_logging()
 

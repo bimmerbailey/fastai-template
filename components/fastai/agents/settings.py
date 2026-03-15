@@ -1,8 +1,10 @@
 from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import SettingsConfigDict
+
+from fastai.utils.settings import FastAISettings
 
 
-class AgentSettings(BaseSettings):
+class AgentSettings(FastAISettings):
     """Settings for the AI agent.
 
     Model API keys are handled by the respective provider SDKs
@@ -11,7 +13,7 @@ class AgentSettings(BaseSettings):
     configuration.
     """
 
-    model_config = SettingsConfigDict(frozen=True, env_prefix="AGENT_")
+    model_config = SettingsConfigDict(env_prefix="FASTAI_AGENT_")
 
     model: str = Field(
         default="openai:gpt-4o",

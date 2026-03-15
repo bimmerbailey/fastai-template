@@ -9,12 +9,12 @@ from pydantic_ai import Agent
 from fastai.agents import AgentDeps, AgentSettings
 from fastai.api_v1 import init_api_v1
 from fastai.auth.settings import AuthSettings
-from fastai.database.core import DatabaseSettings
+from fastai.database.core import PostgresSettings
 
 
 @pytest_asyncio.fixture
 async def app(
-    test_db_settings: DatabaseSettings,
+    test_db_settings: PostgresSettings,
     test_db_engine,
     agent_settings: AgentSettings,
     test_agent: Agent[AgentDeps, str],
