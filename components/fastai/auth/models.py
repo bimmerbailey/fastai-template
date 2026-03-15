@@ -52,6 +52,11 @@ class UserOAuthAccount(TimestampMixin, SQLModel, table=True):
         sa_column=Column(String, nullable=False),
         description="The 'sub' claim from the OIDC token — unique per provider",
     )
+    account_email: str | None = Field(
+        default=None,
+        sa_column=Column(String, nullable=True),
+        description="Email address associated with this OAuth account",
+    )
 
     # Token storage (encrypt at rest in production)
     access_token: str = Field(
@@ -77,6 +82,7 @@ class UserOAuthAccount(TimestampMixin, SQLModel, table=True):
         access_token: str,
         refresh_token: str | None = None,
         expires_at: int | None = None,
+        account_email: str | None = None,
     ) -> UserOAuthAccount:
         """Create a new OAuth account link."""
         account = cls(
@@ -86,6 +92,7 @@ class UserOAuthAccount(TimestampMixin, SQLModel, table=True):
             access_token=access_token,
             refresh_token=refresh_token,
             expires_at=expires_at,
+            account_email=account_email,
         )
         session.add(account)
         await session.commit()
@@ -136,6 +143,34 @@ class UserOAuthAccount(TimestampMixin, SQLModel, table=True):
         await session.refresh(self)
         return self
 
+    async def update_account_email(
+        self,
+        session: AsyncSession,
+        account_email: str,
+    ) -> UserOAuthAccount:
+        """Update the email address associated with this OAuth account."""
+        self.account_email = account_email
+        session.add(self)
+        await session.commit()
+        await session.refresh(self)
+        return self
+
+    @classmethod
+    async def get_by_provider_email(
+        cls,
+        session: AsyncSession,
+        *,
+        oauth_provider: str,
+        account_email: str,
+    ) -> UserOAuthAccount | None:
+        """Look up an OAuth account by provider + account email."""
+        statement = select(cls).where(
+            cls.oauth_provider == oauth_provider,
+            cls.account_email == account_email,
+        )
+        results = await session.exec(statement)
+        return results.first()
+
     async def delete(self, session: AsyncSession) -> None:
         """Remove this OAuth account link."""
         await session.delete(self)
@@ -163,6 +198,11 @@ class RefreshToken(SQLModel, table=True):
         sa_column=Column(String, nullable=False, unique=True, index=True),
         description="SHA-256 hex digest of the refresh token JWT.",
     )
+    family_id: _uuid.UUID = Field(
+        default_factory=_uuid.uuid4,
+        index=True,
+        description="Groups tokens in the same rotation chain for scoped revocation.",
+    )
     expires_at: AwareDatetime = Field(
         sa_type=DateTime(timezone=True),  # pyright: ignore[reportArgumentType]
         nullable=False,
@@ -186,12 +226,18 @@ class RefreshToken(SQLModel, table=True):
         user_id: _uuid.UUID,
         token_hash: str,
         expires_at: datetime,
+        family_id: _uuid.UUID | None = None,
     ) -> RefreshToken:
-        """Persist a new refresh token record."""
+        """Persist a new refresh token record.
+
+        If *family_id* is ``None`` a new UUID is generated automatically,
+        starting a fresh rotation chain.
+        """
         record = cls(
             user_id=user_id,
             token_hash=token_hash,
             expires_at=expires_at,
+            family_id=family_id or _uuid.uuid4(),
         )
         session.add(record)
         await session.commit()
@@ -230,6 +276,32 @@ class RefreshToken(SQLModel, table=True):
         now = datetime.now(tz=timezone.utc)
         statement = select(cls).where(
             cls.user_id == user_id,
+            cls.revoked_at.is_(None),  # pyright: ignore[reportOptionalMemberAccess, reportAttributeAccessIssue]
+        )
+        results = await session.exec(statement)
+        tokens = list(results.all())
+        count = 0
+        for token in tokens:
+            token.revoked_at = now
+            session.add(token)
+            count += 1
+        if count > 0:
+            await session.commit()
+        return count
+
+    @classmethod
+    async def revoke_all_in_family(
+        cls,
+        session: AsyncSession,
+        family_id: _uuid.UUID,
+    ) -> int:
+        """Revoke all active refresh tokens in a rotation family.
+
+        Returns the number of tokens revoked.
+        """
+        now = datetime.now(tz=timezone.utc)
+        statement = select(cls).where(
+            cls.family_id == family_id,
             cls.revoked_at.is_(None),  # pyright: ignore[reportOptionalMemberAccess, reportAttributeAccessIssue]
         )
         results = await session.exec(statement)

@@ -48,6 +48,7 @@ async def test_create_oauth_account(
         access_token="access-token-abc",
         refresh_token="refresh-token-xyz",
         expires_at=1700000000,
+        account_email="user@gmail.com",
     )
 
     assert account.id is not None
@@ -58,6 +59,7 @@ async def test_create_oauth_account(
     assert account.access_token == "access-token-abc"
     assert account.refresh_token == "refresh-token-xyz"
     assert account.expires_at == 1700000000
+    assert account.account_email == "user@gmail.com"
     assert account.created_at is not None
     assert account.updated_at is not None
 
@@ -191,3 +193,65 @@ async def test_delete_oauth_account(
         oauth_subject="google-sub-123",
     )
     assert found is None
+
+
+@pytest.mark.asyncio
+async def test_create_oauth_account_without_email(
+    test_db_session: AsyncSession, user_id: uuid.UUID
+) -> None:
+    """account_email defaults to None when not provided."""
+    account = await UserOAuthAccount.create(
+        test_db_session,
+        user_id=user_id,
+        oauth_provider="github",
+        oauth_subject="gh-no-email",
+        access_token="token",
+    )
+    assert account.account_email is None
+
+
+@pytest.mark.asyncio
+async def test_update_account_email(
+    test_db_session: AsyncSession, user_id: uuid.UUID
+) -> None:
+    account = await UserOAuthAccount.create(
+        test_db_session,
+        user_id=user_id,
+        oauth_provider="google",
+        oauth_subject="google-email-update",
+        access_token="token",
+    )
+    assert account.account_email is None
+
+    updated = await account.update_account_email(test_db_session, "new@gmail.com")
+    assert updated.account_email == "new@gmail.com"
+
+
+@pytest.mark.asyncio
+async def test_get_by_provider_email(
+    test_db_session: AsyncSession, user_id: uuid.UUID
+) -> None:
+    await UserOAuthAccount.create(
+        test_db_session,
+        user_id=user_id,
+        oauth_provider="google",
+        oauth_subject="google-by-email",
+        access_token="token",
+        account_email="findme@gmail.com",
+    )
+
+    found = await UserOAuthAccount.get_by_provider_email(
+        test_db_session,
+        oauth_provider="google",
+        account_email="findme@gmail.com",
+    )
+    assert found is not None
+    assert found.account_email == "findme@gmail.com"
+
+    # Different provider should not match
+    not_found = await UserOAuthAccount.get_by_provider_email(
+        test_db_session,
+        oauth_provider="github",
+        account_email="findme@gmail.com",
+    )
+    assert not_found is None

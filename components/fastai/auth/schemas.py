@@ -11,6 +11,7 @@ class OAuthAccountRead(SQLModel):
     id: uuid.UUID
     user_id: uuid.UUID
     oauth_provider: str
+    account_email: str | None
     created_at: AwareDatetime
     updated_at: AwareDatetime
     # Intentionally omits: access_token, refresh_token, expires_at, oauth_subject

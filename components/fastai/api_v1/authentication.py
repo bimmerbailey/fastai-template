@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import uuid
+import uuid as _uuid
 from typing import Annotated
 
 import structlog.stdlib
@@ -70,6 +70,7 @@ async def _issue_tokens(
     token_service: TokenService,
     response: Response,
     auth_settings: AuthSettings,
+    family_id: _uuid.UUID | None = None,
 ) -> TokenResponse:
     """Create an access/refresh token pair, persist the refresh token hash,
     and set the refresh token as an HttpOnly cookie."""
@@ -87,6 +88,7 @@ async def _issue_tokens(
         user_id=user.id,
         token_hash=TokenService.hash_token(refresh_token),
         expires_at=payload.exp,
+        family_id=family_id,
     )
 
     _set_refresh_cookie(
@@ -219,7 +221,7 @@ async def refresh(
             "Revoked refresh token reuse detected",
             user_id=str(stored_token.user_id),
         )
-        await RefreshToken.revoke_all_for_user(session, stored_token.user_id)
+        await RefreshToken.revoke_all_in_family(session, stored_token.family_id)
         _clear_refresh_cookie(response, auth_settings)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -230,7 +232,7 @@ async def refresh(
     await stored_token.revoke(session)
 
     # Verify the user still exists and is active
-    user = await User.get(session, uuid.UUID(payload.sub))
+    user = await User.get(session, _uuid.UUID(payload.sub))
     if user is None or not user.is_active:
         _clear_refresh_cookie(response, auth_settings)
         raise HTTPException(
@@ -239,7 +241,14 @@ async def refresh(
         )
 
     logger.info("Token refreshed", user_id=str(user.id))
-    return await _issue_tokens(session, user, token_service, response, auth_settings)
+    return await _issue_tokens(
+        session,
+        user,
+        token_service,
+        response,
+        auth_settings,
+        family_id=stored_token.family_id,
+    )
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

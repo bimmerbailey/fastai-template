@@ -233,6 +233,34 @@ class TestRefresh:
         assert "revoked" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
+    async def test_reuse_revokes_family_not_all_sessions(
+        self, api_v1_client: AsyncClient, registered_user: User
+    ) -> None:
+        """When reuse is detected, only the compromised family is revoked.
+        Tokens from a separate login session (different family) survive."""
+        # Session A
+        login_a = await _login(api_v1_client, "auth@example.com", TEST_PASSWORD)
+        refresh_a = _extract_refresh_cookie(login_a)
+
+        # Session B (separate login = separate family)
+        login_b = await _login(api_v1_client, "auth@example.com", TEST_PASSWORD)
+        refresh_b = _extract_refresh_cookie(login_b)
+
+        # Rotate session A once (old token becomes revoked)
+        api_v1_client.cookies.set("refresh_token", refresh_a, path="/auth")
+        await api_v1_client.post("/auth/refresh")
+
+        # Reuse the OLD session A token → triggers family revocation
+        api_v1_client.cookies.set("refresh_token", refresh_a, path="/auth")
+        reuse_resp = await api_v1_client.post("/auth/refresh")
+        assert reuse_resp.status_code == 401
+
+        # Session B should still work (different family)
+        api_v1_client.cookies.set("refresh_token", refresh_b, path="/auth")
+        b_resp = await api_v1_client.post("/auth/refresh")
+        assert b_resp.status_code == 200
+
+    @pytest.mark.asyncio
     async def test_access_token_as_refresh_fails(
         self, api_v1_client: AsyncClient, registered_user: User
     ) -> None:

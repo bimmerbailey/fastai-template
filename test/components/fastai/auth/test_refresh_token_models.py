@@ -54,6 +54,9 @@ async def test_create_refresh_token(
     assert token.token_hash == "abc123hash"
     assert token.revoked_at is None
     assert token.created_at is not None
+    # family_id should be auto-generated
+    assert token.family_id is not None
+    assert isinstance(token.family_id, uuid.UUID)
 
 
 @pytest.mark.asyncio
@@ -208,3 +211,81 @@ async def test_is_expired_property(
     assert fetched_valid is not None
     assert fetched_expired.is_expired is True
     assert fetched_valid.is_expired is False
+
+
+@pytest.mark.asyncio
+async def test_create_with_explicit_family_id(
+    test_db_session: AsyncSession, user_id: uuid.UUID
+) -> None:
+    family = uuid.uuid4()
+    expires = datetime.now(tz=timezone.utc) + timedelta(days=7)
+    token = await RefreshToken.create(
+        test_db_session,
+        user_id=user_id,
+        token_hash="explicit-family",
+        expires_at=expires,
+        family_id=family,
+    )
+    assert token.family_id == family
+
+
+@pytest.mark.asyncio
+async def test_revoke_all_in_family(
+    test_db_session: AsyncSession, user_id: uuid.UUID
+) -> None:
+    family = uuid.uuid4()
+    expires = datetime.now(tz=timezone.utc) + timedelta(days=7)
+    await RefreshToken.create(
+        test_db_session,
+        user_id=user_id,
+        token_hash="fam-1",
+        expires_at=expires,
+        family_id=family,
+    )
+    await RefreshToken.create(
+        test_db_session,
+        user_id=user_id,
+        token_hash="fam-2",
+        expires_at=expires,
+        family_id=family,
+    )
+
+    count = await RefreshToken.revoke_all_in_family(test_db_session, family)
+    assert count == 2
+
+    t1 = await RefreshToken.get_by_token_hash(test_db_session, "fam-1")
+    t2 = await RefreshToken.get_by_token_hash(test_db_session, "fam-2")
+    assert t1 is not None and t1.is_revoked
+    assert t2 is not None and t2.is_revoked
+
+
+@pytest.mark.asyncio
+async def test_revoke_family_skips_other_families(
+    test_db_session: AsyncSession, user_id: uuid.UUID
+) -> None:
+    family_a = uuid.uuid4()
+    family_b = uuid.uuid4()
+    expires = datetime.now(tz=timezone.utc) + timedelta(days=7)
+
+    await RefreshToken.create(
+        test_db_session,
+        user_id=user_id,
+        token_hash="family-a-token",
+        expires_at=expires,
+        family_id=family_a,
+    )
+    await RefreshToken.create(
+        test_db_session,
+        user_id=user_id,
+        token_hash="family-b-token",
+        expires_at=expires,
+        family_id=family_b,
+    )
+
+    # Revoke only family A
+    count = await RefreshToken.revoke_all_in_family(test_db_session, family_a)
+    assert count == 1
+
+    # Family B should be untouched
+    tb = await RefreshToken.get_by_token_hash(test_db_session, "family-b-token")
+    assert tb is not None and not tb.is_revoked
