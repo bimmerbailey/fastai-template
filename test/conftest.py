@@ -4,6 +4,7 @@ import pytest
 import pytest_asyncio
 from pydantic_ai import Agent, models
 from pydantic_ai.models.test import TestModel
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -35,6 +36,7 @@ async def test_db_engine(
     """Create a test database engine."""
     engine = create_db_engine(test_db_settings)
     async with engine.begin() as conn:
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
         await conn.run_sync(SQLModel.metadata.create_all)
 
     yield engine

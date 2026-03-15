@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import structlog.stdlib
 from pydantic import AwareDatetime
+from sqlalchemy import CheckConstraint, Index, text, update
 from sqlmodel import Column, DateTime, Field, Relationship, String, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -39,6 +40,17 @@ class User(UserBase, TimestampMixin, table=True):
     """
 
     __tablename__ = "users"  # pyright: ignore[reportAssignmentType]
+    __table_args__ = (
+        Index(
+            "ix_users_email_unique_active",
+            "email",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+        CheckConstraint(
+            "failed_login_count >= 0", name="ck_users_failed_login_count_nonneg"
+        ),
+    )
 
     # ── Primary key ──
     id: _uuid.UUID = Field(default_factory=_uuid.uuid4, primary_key=True)
@@ -157,7 +169,13 @@ class User(UserBase, TimestampMixin, table=True):
             statement = statement.where(
                 cls.deleted_at.is_(None)  # pyright: ignore[reportOptionalMemberAccess, reportAttributeAccessIssue]
             )
-        statement = statement.offset(offset).limit(limit)
+        statement = (
+            statement.order_by(
+                cls.created_at.desc()  # pyright: ignore[reportAttributeAccessIssue]
+            )
+            .offset(offset)
+            .limit(limit)
+        )
         results = await session.exec(statement)
         return list(results.all())
 
@@ -299,21 +317,31 @@ class User(UserBase, TimestampMixin, table=True):
     ) -> "User":
         """Record a failed login attempt.
 
-        Increments ``failed_login_count`` and locks the account when the
-        threshold is reached.
+        Uses an atomic SQL increment to prevent race conditions under
+        concurrent requests. Locks the account when the threshold is reached.
 
         Args:
             session: AsyncSession
             max_attempts: Number of consecutive failures before lockout.
             lockout_minutes: How long the account stays locked, in minutes.
         """
-        self.failed_login_count += 1
-        if self.failed_login_count >= max_attempts:
+        # Atomic SQL-side increment to avoid lost updates under concurrency
+        stmt = (  # pyright: ignore[reportCallIssue]
+            update(User)
+            .where(User.id == self.id)  # pyright: ignore[reportArgumentType]
+            .values(failed_login_count=User.failed_login_count + 1)
+            .returning(User.failed_login_count)  # pyright: ignore[reportArgumentType]
+        )
+        result = await session.exec(stmt)  # pyright: ignore[reportArgumentType]
+        new_count: int = result.scalar_one()  # pyright: ignore[reportAttributeAccessIssue]
+
+        if new_count >= max_attempts:
             self.locked_until = datetime.now(tz=timezone.utc) + timedelta(
                 minutes=lockout_minutes
             )
             self.status = AccountStatus.LOCKED
-        session.add(self)
+            session.add(self)
+
         await session.commit()
         await session.refresh(self)
         return self

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import re
 import uuid as _uuid
 from decimal import Decimal
 from typing import Optional
 
+from sqlalchemy import CheckConstraint, Index
 from sqlmodel import Column, Field, Numeric, String, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -15,6 +17,16 @@ class Item(ItemBase, TimestampMixin, table=True):
     """Database table model for items."""
 
     __tablename__ = "items"  # pyright: ignore[reportAssignmentType]
+    __table_args__ = (
+        CheckConstraint("quantity >= 0", name="ck_items_quantity_nonneg"),
+        CheckConstraint("cost >= 0", name="ck_items_cost_nonneg"),
+        Index(
+            "ix_items_name_trgm",
+            "name",
+            postgresql_using="gin",
+            postgresql_ops={"name": "gin_trgm_ops"},
+        ),
+    )
 
     id: _uuid.UUID = Field(default_factory=_uuid.uuid4, primary_key=True)
     name: str = Field(sa_column=Column(String, nullable=False))
@@ -47,7 +59,12 @@ class Item(ItemBase, TimestampMixin, table=True):
         cls, session: AsyncSession, offset: int = 0, limit: int = 100
     ) -> list[Item]:
         """Get a paginated list of items."""
-        statement = select(cls).offset(offset).limit(limit)
+        statement = (
+            select(cls)
+            .order_by(cls.created_at.desc())  # pyright: ignore[reportAttributeAccessIssue]
+            .offset(offset)
+            .limit(limit)
+        )
         results = await session.exec(statement)
         return list(results.all())
 
@@ -79,9 +96,10 @@ class Item(ItemBase, TimestampMixin, table=True):
         Returns:
             A list of matching items.
         """
+        escaped = re.sub(r"([%_\\])", r"\\\1", query)
         statement = (
             select(cls)
-            .where(cls.name.ilike(f"%{query}%"))  # pyright: ignore[reportAttributeAccessIssue]
+            .where(cls.name.ilike(f"%{escaped}%"))  # pyright: ignore[reportAttributeAccessIssue]
             .limit(limit)
         )
         results = await session.exec(statement)

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional
 from pydantic import AwareDatetime
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy import Index
+from sqlalchemy import text as sa_text
 from sqlmodel import Column, DateTime, Field, Relationship, String, Text, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -38,9 +39,8 @@ class Conversation(ConversationBase, TimestampMixin, table=True):
         Index(
             "ix_conversations_user_id_created_at",
             "user_id",
-            "created_at",
+            sa_text("created_at DESC"),
             postgresql_using="btree",
-            postgresql_ops={"created_at": "DESC"},
             postgresql_include=["id", "title"],
         ),
     )
