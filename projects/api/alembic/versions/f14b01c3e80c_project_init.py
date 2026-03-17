@@ -136,4 +136,5 @@ def downgrade() -> None:
     op.drop_table('users')
     op.drop_index('ix_items_name_trgm', table_name='items', postgresql_using='gin', postgresql_ops={'name': 'gin_trgm_ops'})
     op.drop_table('items')
+    op.execute("DROP EXTENSION IF EXISTS pg_trgm;")
     # ### end Alembic commands ###
