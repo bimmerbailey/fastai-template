@@ -2,6 +2,9 @@
 requires = ["hatchling", "hatch-polylith-bricks"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+packages = ["fastai"]
+
 [project]
 name = "api"
 version = "0.1.0"
@@ -13,7 +16,7 @@ dependencies = [
     "gunicorn>=23.0.0",
     "joserfc>=1.6.0",
     "logfire[fastapi,sqlalchemy]>=3.16.1",
-    "pydantic>=2.11.5",
+    "pydantic[email]>=2.11.5",
     "pydantic-settings>=2.9.1",
     "sqlalchemy[asyncio]>=2.0.41",
     "sqlmodel>=0.0.24",
@@ -22,6 +25,8 @@ dependencies = [
     "pwdlib[argon2]>=0.3.0",
     "uvicorn>=0.34.2",
     "pydantic-ai-slim[logfire,openai,openrouter,anthropic]>=0.2.12",
+    "python-multipart>=0.0.22",
+    "asyncpg>=0.31.0",
 ]
 
 [tool.hatch.build.hooks.polylith-bricks]
