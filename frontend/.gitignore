@@ -15,9 +15,8 @@ coverage
 *.local
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+.vscode/
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
@@ -40,3 +39,5 @@ __screenshots__/
 
 test-results/
 playwright-report/
+
+node_modules/
