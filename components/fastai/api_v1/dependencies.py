@@ -14,7 +14,7 @@ from fastai.users.models import User
 from fastai.utils.dependencies import SessionDep
 
 security_scheme = OAuth2PasswordBearer(
-    tokenUrl="/auth/login",
+    tokenUrl="/api/v1/auth/token",
     scopes={
         "admin": "Full administrative access.",
     },

@@ -24,7 +24,23 @@ services:
       - ./components:/src/components
       - ./test:/src/test
       - ./projects/api:/src/projects/api
-  
+
+  frontend:
+    tty: true
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    environment:
+      - VITE_API_PROXY_TARGET=http://api:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+
   postgres:
     image: postgres:18.1-alpine3.21
     environment:

@@ -44,7 +44,7 @@ async def api_v1_client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
 async def _login_client(client: AsyncClient, email: str, password: str) -> AsyncClient:
     """Log in and set the Authorization header on the client."""
     res = await client.post(
-        "/auth/login", data={"username": email, "password": password}
+        "/auth/login", json={"username": email, "password": password}
     )
     assert res.status_code == 200, f"Login failed: {res.text}"
     token = res.json()["access_token"]

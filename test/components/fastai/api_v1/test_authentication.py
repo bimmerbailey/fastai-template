@@ -35,10 +35,10 @@ def _assert_cookie_is_httponly(response) -> None:
 
 
 async def _login(client: AsyncClient, email: str, password: str):
-    """Helper to perform a login and return the response."""
+    """Helper to perform a login via JSON endpoint and return the response."""
     return await client.post(
         "/auth/login",
-        data={"username": email, "password": password},
+        json={"username": email, "password": password},
     )
 
 
@@ -302,3 +302,47 @@ class TestLogout:
         api_v1_client.cookies.set("refresh_token", "unknown-token", path="/auth")
         response = await api_v1_client.post("/auth/logout")
         assert response.status_code == 204
+
+
+class TestToken:
+    """Tests for POST /auth/token (form-encoded endpoint for Swagger UI)."""
+
+    @pytest.mark.asyncio
+    async def test_returns_access_token_with_form_data(
+        self, api_v1_client: AsyncClient, registered_user: User
+    ) -> None:
+        response = await api_v1_client.post(
+            "/auth/token",
+            data={"username": "auth@example.com", "password": TEST_PASSWORD},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
+        _extract_refresh_cookie(response)
+        _assert_cookie_is_httponly(response)
+
+    @pytest.mark.asyncio
+    async def test_wrong_password_returns_401(
+        self, api_v1_client: AsyncClient, registered_user: User
+    ) -> None:
+        response = await api_v1_client.post(
+            "/auth/token",
+            data={"username": "auth@example.com", "password": "wrongpassword123"},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_returns_same_token_format_as_login(
+        self, api_v1_client: AsyncClient, registered_user: User
+    ) -> None:
+        """The /token and /login endpoints should return identical response shapes."""
+        json_response = await _login(api_v1_client, "auth@example.com", TEST_PASSWORD)
+        form_response = await api_v1_client.post(
+            "/auth/token",
+            data={"username": "auth@example.com", "password": TEST_PASSWORD},
+        )
+
+        assert json_response.json().keys() == form_response.json().keys()

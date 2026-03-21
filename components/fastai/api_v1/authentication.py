@@ -10,7 +10,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from fastai.api_v1.dependencies import AuthSettingsDep, TokenServiceDep
 from fastai.auth.models import RefreshToken
-from fastai.auth.schemas import TokenResponse
+from fastai.auth.schemas import TokenResponse, OAuth2PasswordRequestBody
 from fastai.auth.settings import AuthSettings
 from fastai.auth.token_service import TokenError, TokenService
 from fastai.users.exceptions import (
@@ -137,9 +137,9 @@ async def login(
     session: SessionDep,
     auth_settings: AuthSettingsDep,
     token_service: TokenServiceDep,
-    credentials: Annotated[OAuth2PasswordRequestForm, Depends()],
+    credentials: Annotated[OAuth2PasswordRequestBody, Body()],
 ) -> TokenResponse:
-    """Authenticate with email and password, returning an access token.
+    """Authenticate with username and password, returning an access token.
 
     The refresh token is set as an HttpOnly cookie.
     """
@@ -176,6 +176,28 @@ async def login(
         )
 
     return await _issue_tokens(session, user, token_service, response, auth_settings)
+
+
+# NOTE: This is JUST to work with the docs "authorize" button
+@router.post("/token", response_model=TokenResponse, include_in_schema=False)
+async def token(
+    request: Request,
+    response: Response,
+    session: SessionDep,
+    auth_settings: AuthSettingsDep,
+    token_service: TokenServiceDep,
+    credentials: Annotated[OAuth2PasswordRequestForm, Depends()],
+) -> TokenResponse:
+    """Authenticate with username and password, returning an access token.
+
+    The refresh token is set as an HttpOnly cookie.
+    """
+    json_data = OAuth2PasswordRequestBody(
+        username=credentials.username, password=credentials.password
+    )
+    return await login(
+        request, response, session, auth_settings, token_service, json_data
+    )
 
 
 @router.post("/refresh", response_model=TokenResponse)
