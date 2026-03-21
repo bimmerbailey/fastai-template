@@ -48,7 +48,7 @@ install:
 
 # Development environment
 dev:
-	docker compose up api
+	docker compose up api frontend
 
 down:
 	docker compose down
