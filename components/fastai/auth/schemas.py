@@ -5,6 +5,11 @@ from pydantic import AwareDatetime, Field
 from sqlmodel import SQLModel
 
 
+class OAuth2PasswordRequestBody(SQLModel):
+    username: str
+    password: str
+
+
 class OAuthAccountRead(SQLModel):
     """Public representation of a linked OAuth account."""
 

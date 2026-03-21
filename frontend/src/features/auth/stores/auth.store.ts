@@ -1,8 +1,8 @@
-import { computed, ref } from 'vue'
-import { defineStore } from 'pinia'
-import { useRouter } from 'vue-router'
-import { authService } from '../services/auth.service'
-import type { AuthUser, LoginPayload } from '../types/auth.types'
+import {computed, ref} from 'vue'
+import {defineStore} from 'pinia'
+import {useRouter} from 'vue-router'
+import {authService} from '../services/auth.service'
+import type {AuthUser, LoginPayload} from '../types/auth.types'
 
 export const useAuthStore = defineStore('auth', () => {
   const router = useRouter()
@@ -22,7 +22,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     user.value = null
     localStorage.removeItem('auth_token')
-    router.push({ name: 'login' })
+    router.push({name: 'login'})
   }
 
   return {

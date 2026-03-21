@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic_ai import Agent
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -39,6 +40,14 @@ def init_api_v1(
         title="API v1",
         docs_url="/docs",
         openapi_url="/openapi.json",
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        # TODO: ABSOLUTELY COME BACK TO THIS
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     app.state.db_engine = engine

@@ -14,6 +14,7 @@ export function useLogin() {
     try {
       await authStore.login(payload)
     } catch (e) {
+      // TODO: Parse ofetch error to extract message
       error.value = e instanceof Error ? e.message : 'An unexpected error occurred'
     } finally {
       isLoading.value = false

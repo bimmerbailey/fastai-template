@@ -6,6 +6,7 @@ import structlog.stdlib
 from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
 from fastapi.middleware import Middleware
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fastai.admin_v1 import init_admin_v1_app
@@ -43,6 +44,15 @@ def init_api(db_settings: PostgresSettings | None = None) -> FastAPI:
             Middleware(LoggingMiddleware, logger=logger),
         ],
     )
+    app.add_middleware(
+        CORSMiddleware,
+        # TODO: ABSOLUTELY COME BACK TO THIS
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
     logfire.instrument_fastapi(app=app)
 
     # Mount sub-applications

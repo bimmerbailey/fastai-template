@@ -10,9 +10,14 @@ export const api = ofetch.create({
       options.headers.set('Authorization', `Bearer ${token}`)
     }
   },
-  onResponseError({ response }) {
-    if (response.status === 401) {
+  onResponseError({ response, request }) {
+    const url = typeof request === 'string' ? request : request.url
+    // TODO: Not sure if I like this
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register')
+
+    if (response.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem(AUTH_TOKEN_KEY)
+      // TODO: Use vue-router?
       window.location.href = '/#/login'
     }
   },

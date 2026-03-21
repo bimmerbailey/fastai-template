@@ -11,7 +11,7 @@ const password = ref('')
 const { isLoading, error, login } = useLogin()
 
 async function onSubmit(): Promise<void> {
-  await login({ email: email.value, password: password.value })
+  await login({ username: email.value, password: password.value })
 }
 </script>
 
