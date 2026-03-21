@@ -25,10 +25,14 @@ COPY ./test ./test
 
 FROM base AS dev
 
+# Use symlinks instead of copies so volume-mounted source changes
+# are reflected immediately without reinstalling.
+ENV UV_LINK_MODE=symlink
+
 # Sync the project
 RUN --mount=type=cache,target=/root/.cache/uv \
      uv sync --package api --frozen
- 
+
 EXPOSE 8000
 ENTRYPOINT ["uv", "run"]
 CMD ["uvicorn", "fastai.api:init_api", "--host", "0.0.0.0", \
