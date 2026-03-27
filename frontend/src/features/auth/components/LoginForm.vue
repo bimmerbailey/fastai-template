@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useLogin } from '../composables/useLogin'
+import { ref } from "vue"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useLogin } from "../composables/useLogin"
 
-const email = ref('')
-const password = ref('')
+const email = ref("")
+const password = ref("")
 
 const { isLoading, error, login } = useLogin()
 
@@ -48,7 +48,7 @@ async function onSubmit(): Promise<void> {
     </div>
 
     <Button type="submit" class="w-full" :disabled="isLoading">
-      {{ isLoading ? 'Signing in...' : 'Sign in' }}
+      {{ isLoading ? "Signing in..." : "Sign in" }}
     </Button>
   </form>
 </template>

@@ -1,13 +1,7 @@
 <script setup lang="ts">
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
-import LoginForm from '../components/LoginForm.vue'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import ThemeSwitcher from "@/components/ThemeSwitcher.vue"
+import LoginForm from "../components/LoginForm.vue"
 </script>
 
 <template>

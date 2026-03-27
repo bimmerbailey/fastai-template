@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Sun, Moon } from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
-import { useThemeStore, THEMES, type ThemeName } from '@/stores/theme.store'
+import { Sun, Moon } from "lucide-vue-next"
+import { Button } from "@/components/ui/button"
+import { useThemeStore, THEMES, type ThemeName } from "@/stores/theme.store"
 
 const themeStore = useThemeStore()
 

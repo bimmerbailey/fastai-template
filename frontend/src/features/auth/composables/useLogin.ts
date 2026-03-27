@@ -1,6 +1,6 @@
-import { ref } from 'vue'
-import { useAuthStore } from '../stores/auth.store'
-import type { LoginPayload } from '../types/auth.types'
+import { ref } from "vue"
+import { useAuthStore } from "../stores/auth.store"
+import type { LoginPayload } from "../types/auth.types"
 
 export function useLogin() {
   const authStore = useAuthStore()
@@ -15,7 +15,7 @@ export function useLogin() {
       await authStore.login(payload)
     } catch (e) {
       // TODO: Parse ofetch error to extract message
-      error.value = e instanceof Error ? e.message : 'An unexpected error occurred'
+      error.value = e instanceof Error ? e.message : "An unexpected error occurred"
     } finally {
       isLoading.value = false
     }

@@ -1,12 +1,12 @@
-import { computed, ref, watch } from 'vue'
-import { defineStore } from 'pinia'
+import { computed, ref, watch } from "vue"
+import { defineStore } from "pinia"
 
 export type ThemeName =
-  | 'precision-dark'
-  | 'developer-verdant'
-  | 'warm-neutral'
-  | 'vibrant-saas'
-  | 'tactile-craft'
+  | "precision-dark"
+  | "developer-verdant"
+  | "warm-neutral"
+  | "vibrant-saas"
+  | "tactile-craft"
 
 export interface ThemeOption {
   id: ThemeName
@@ -18,62 +18,62 @@ export interface ThemeOption {
 
 export const THEMES: ThemeOption[] = [
   {
-    id: 'precision-dark',
-    label: 'Precision',
-    description: 'Linear/Raycast',
-    accentColor: '#5B5BD6',
-    bgPreview: '#F0F3F6',
+    id: "precision-dark",
+    label: "Precision",
+    description: "Linear/Raycast",
+    accentColor: "#5B5BD6",
+    bgPreview: "#F0F3F6",
   },
   {
-    id: 'developer-verdant',
-    label: 'Verdant',
-    description: 'Supabase/Terminal',
-    accentColor: '#3ECF8E',
-    bgPreview: '#EFF3F0',
+    id: "developer-verdant",
+    label: "Verdant",
+    description: "Supabase/Terminal",
+    accentColor: "#3ECF8E",
+    bgPreview: "#EFF3F0",
   },
   {
-    id: 'warm-neutral',
-    label: 'Warm',
-    description: 'Notion/Cal.com',
-    accentColor: '#2F7AEA',
-    bgPreview: '#F2F0EB',
+    id: "warm-neutral",
+    label: "Warm",
+    description: "Notion/Cal.com",
+    accentColor: "#2F7AEA",
+    bgPreview: "#F2F0EB",
   },
   {
-    id: 'vibrant-saas',
-    label: 'Vibrant',
-    description: 'Stripe',
-    accentColor: '#635BFF',
-    bgPreview: '#FFFFFF',
+    id: "vibrant-saas",
+    label: "Vibrant",
+    description: "Stripe",
+    accentColor: "#635BFF",
+    bgPreview: "#FFFFFF",
   },
   {
-    id: 'tactile-craft',
-    label: 'Tactile',
-    description: 'Craft/Editorial',
-    accentColor: '#C04030',
-    bgPreview: '#FAF8F4',
+    id: "tactile-craft",
+    label: "Tactile",
+    description: "Craft/Editorial",
+    accentColor: "#C04030",
+    bgPreview: "#FAF8F4",
   },
 ]
 
-const STORAGE_KEY_THEME = 'app-theme'
-const STORAGE_KEY_DARK = 'app-dark-mode'
+const STORAGE_KEY_THEME = "app-theme"
+const STORAGE_KEY_DARK = "app-dark-mode"
 
 function getStoredTheme(): ThemeName {
   const stored = localStorage.getItem(STORAGE_KEY_THEME)
   if (stored && THEMES.some((t) => t.id === stored)) {
     return stored as ThemeName
   }
-  return 'precision-dark'
+  return "precision-dark"
 }
 
 function getStoredDarkMode(): boolean {
   const stored = localStorage.getItem(STORAGE_KEY_DARK)
   if (stored !== null) {
-    return stored === 'true'
+    return stored === "true"
   }
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
 }
 
-export const useThemeStore = defineStore('theme', () => {
+export const useThemeStore = defineStore("theme", () => {
   const themeName = ref<ThemeName>(getStoredTheme())
   const isDark = ref(getStoredDarkMode())
 
@@ -89,12 +89,12 @@ export const useThemeStore = defineStore('theme', () => {
 
   function applyTheme(): void {
     const root = document.documentElement
-    root.setAttribute('data-theme', themeName.value)
+    root.setAttribute("data-theme", themeName.value)
 
     if (isDark.value) {
-      root.classList.add('dark')
+      root.classList.add("dark")
     } else {
-      root.classList.remove('dark')
+      root.classList.remove("dark")
     }
   }
 
