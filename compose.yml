@@ -16,7 +16,6 @@ services:
         required: false
     environment:
       - FASTAI_POSTGRES_HOSTNAME=postgres
-      # TODO: Figure out local ai/ollama with this
     ports:
       - "8000:8000"
     volumes:
