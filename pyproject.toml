@@ -45,6 +45,7 @@ dev = [
 
 [tool.uv]
 managed = true
+exclude-newer = "2 weeks"
 
 [tool.uv.workspace]
 members = ["projects/*"]
