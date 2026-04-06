@@ -13,6 +13,7 @@ from fastai.users.models import User  # noqa: F401
 from fastai.items.models import Item  # noqa: F401
 from fastai.chats.models import Conversation, Message  # noqa: F401
 from fastai.auth.models import UserOAuthAccount, RefreshToken  # noqa: F401
+from fastai.embeddings.models import Embedding  # noqa: F401
 
 config = context.config
 

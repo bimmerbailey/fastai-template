@@ -16,7 +16,7 @@ class AgentSettings(FastAISettings):
     model_config = SettingsConfigDict(env_prefix="FASTAI_AGENT_")
 
     model: str = Field(
-        default="openai:gpt-4o",
+        default="openai:gpt-5.4-nano",
         description=(
             "Model identifier in provider:model format. "
             "Examples: 'openai:gpt-4o', 'anthropic:claude-sonnet-4-20250514', "

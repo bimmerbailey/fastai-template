@@ -1,6 +1,9 @@
 import anyio
 from decimal import Decimal
+from pathlib import Path
 
+from alembic import command
+from alembic.config import Config
 from faker import Faker
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -9,6 +12,7 @@ from fastai.items.models import Item
 from fastai.items.schemas import ItemCreate
 from fastai.users.models import User
 from fastai.users.schemas import UserCreate
+
 # NOTE: Needed for the relationship with User
 from fastai.chats.models import Conversation  # noqa: F401
 
@@ -153,6 +157,7 @@ async def create_items(session: AsyncSession) -> list[Item]:
 
 async def seed_database() -> None:
     """Run the full database seed."""
+    await anyio.to_thread.run_sync(run_migrations)
     engine = create_db_engine()
 
     async with AsyncSession(engine) as session:
@@ -165,6 +170,14 @@ async def seed_database() -> None:
         print("\nDone! Database seeded successfully.")
 
     await destroy_engine(engine)
+
+
+def run_migrations() -> None:
+    """Run alembic migrations (upgrade head)."""
+    root = Path(__file__).resolve().parent.parent
+    alembic_cfg = Config(str(root / "alembic.ini"))
+    command.upgrade(alembic_cfg, "head")
+    print("Migrations applied successfully.")
 
 
 def main() -> None:

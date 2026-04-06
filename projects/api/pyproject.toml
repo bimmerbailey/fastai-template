@@ -27,6 +27,7 @@ dependencies = [
     "pydantic-ai-slim[logfire,openai,openrouter,anthropic]>=0.2.12",
     "python-multipart>=0.0.22",
     "asyncpg>=0.31.0",
+    "pgvector>=0.4.1",
 ]
 
 [tool.hatch.build.hooks.polylith-bricks]
@@ -43,3 +44,4 @@ dependencies = [
 "../../components/fastai/items" = "fastai/items"
 "../../components/fastai/agents" = "fastai/agents"
 "../../components/fastai/chats" = "fastai/chats"
+"../../components/fastai/embeddings" = "fastai/embeddings"

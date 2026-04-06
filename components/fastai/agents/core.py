@@ -24,8 +24,12 @@ INSTRUCTIONS = """\
 You are a helpful AI assistant. You can answer general questions and help \
 users look up items in the inventory database.
 
-Be concise, accurate, and helpful. When users ask about items or inventory, \
-use the available tools to look up real data rather than guessing.\
+When users ask about items, you have two search tools:
+- search_items: for exact or partial name matches
+- semantic_search: for conceptual or descriptive queries
+
+Be concise, accurate, and helpful. Use the available tools to look up \
+real data rather than guessing.\
 """
 
 
@@ -96,6 +100,43 @@ def _register_tools(agent: Agent[AgentDeps, str]) -> None:
             count = await Item.count(session)
 
         return f"There are {count} items in the inventory."
+
+    @agent.tool
+    async def semantic_search(
+        ctx: RunContext[AgentDeps],
+        query: str,
+        source_type: str | None = None,
+    ) -> str:
+        """Search for items using semantic similarity. Use this when the
+        user's query is conceptual or descriptive rather than an exact name
+        match (e.g. "something to keep warm" or "affordable electronics").
+
+        Args:
+            query: A natural language description of what to search for.
+            source_type: Optional filter by source type (e.g. "item").
+                Defaults to searching all source types.
+        """
+        from fastai.embeddings.core import semantic_search as _semantic_search
+
+        async with AsyncSession(ctx.deps.engine) as session:
+            results = await _semantic_search(
+                session,
+                query=query,
+                embedder=ctx.deps.embedder,
+                source_type=source_type,
+                limit=5,
+            )
+
+        if not results:
+            return f"No semantically similar results found for '{query}'."
+
+        lines = [f"Found {len(results)} similar result(s):"]
+        for r in results:
+            lines.append(
+                f"- [{r.source_type}:{r.source_id}] "
+                f"{r.chunk_text[:200]} (similarity: {r.score:.2f})"
+            )
+        return "\n".join(lines)
 
 
 def get_usage_limits(settings: AgentSettings) -> UsageLimits:
