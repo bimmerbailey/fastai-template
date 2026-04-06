@@ -52,7 +52,7 @@ def init_api(db_settings: PostgresSettings | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     logfire.instrument_fastapi(app=app)
 
     # Mount sub-applications
