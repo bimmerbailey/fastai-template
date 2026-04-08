@@ -15,13 +15,13 @@ from fastai.chats.models import Conversation, Message  # noqa: F401
 from fastai.auth.models import UserOAuthAccount, RefreshToken  # noqa: F401
 from fastai.embeddings.models import Embedding  # noqa: F401
 
+# Override URL from app settings so config isn't duplicated
+from fastai.database.core import PostgresSettings
+
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
-
-# Override URL from app settings so config isn't duplicated
-from fastai.database.core import PostgresSettings
 
 try:
     config.set_main_option("sqlalchemy.url", str(PostgresSettings().dsn))

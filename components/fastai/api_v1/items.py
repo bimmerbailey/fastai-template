@@ -44,6 +44,7 @@ async def get_item(session: SessionDep, _: CurrentUserDep, item_id: uuid.UUID) -
     return item
 
 
+# TODO: Move to admin api
 @router.post("", response_model=ItemRead, status_code=status.HTTP_201_CREATED)
 async def create_item(
     session: SessionDep,

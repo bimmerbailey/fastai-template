@@ -7,8 +7,8 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-03-20T13:58:47.553813Z"
-exclude-newer-span = "P14D"
+exclude-newer = "2026-03-25T10:38:02.336354Z"
+exclude-newer-span = "P2W"
 
 [manifest]
 members = [
