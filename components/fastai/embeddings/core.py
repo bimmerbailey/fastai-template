@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import uuid
 
 import structlog.stdlib
@@ -12,9 +10,12 @@ from fastai.embeddings.schemas import EmbeddingCreate, SearchResult
 logger = structlog.stdlib.get_logger(__name__)
 
 
+# TODO: Clean this up
 def _embedder_model_name(embedder: Embedder) -> str:
     """Derive a 'provider:model' identifier from an Embedder instance."""
     model = embedder.model
+    if isinstance(model, str):
+        return model
     return f"{model.system}:{model.model_name}"
 
 

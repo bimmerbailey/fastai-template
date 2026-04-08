@@ -6,15 +6,19 @@ from alembic import command
 from alembic.config import Config
 from faker import Faker
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import delete
 
 from fastai.database.core import create_db_engine, destroy_engine
+from fastai.embeddings.core import build_item_text, embed_and_store
+from fastai.embeddings.providers import create_embedder
+from fastai.embeddings.settings import EmbeddingSettings
 from fastai.items.models import Item
 from fastai.items.schemas import ItemCreate
 from fastai.users.models import User
 from fastai.users.schemas import UserCreate
+from fastai.chats.models import Conversation, Message
+from fastai.auth import RefreshToken, UserOAuthAccount
 
-# NOTE: Needed for the relationship with User
-from fastai.chats.models import Conversation  # noqa: F401
 
 fake = Faker()
 
@@ -155,21 +159,28 @@ async def create_items(session: AsyncSession) -> list[Item]:
     return items
 
 
-async def seed_database() -> None:
-    """Run the full database seed."""
-    await anyio.to_thread.run_sync(run_migrations)
-    engine = create_db_engine()
-
-    async with AsyncSession(engine) as session:
-        print("Creating users...")
-        await create_users(session)
-
-        print("\nCreating items...")
-        await create_items(session)
-
-        print("\nDone! Database seeded successfully.")
-
-    await destroy_engine(engine)
+async def create_embeddings(session: AsyncSession, items: list[Item]) -> None:
+    """Generate and store embeddings for seeded items."""
+    settings = EmbeddingSettings()
+    embedder = create_embedder(settings)
+    for item in items:
+        await session.refresh(item)
+        name = item.name
+        content = build_item_text(
+            name=name,
+            description=item.description,
+            cost=item.cost,
+            quantity=item.quantity,
+        )
+        await embed_and_store(
+            session,
+            source_type="item",
+            source_id=item.id,
+            content=content,
+            embedder=embedder,
+            metadata={"name": name},
+        )
+        print(f"  Embedded item: {name}")
 
 
 def run_migrations() -> None:
@@ -180,9 +191,43 @@ def run_migrations() -> None:
     print("Migrations applied successfully.")
 
 
+async def seed_database(
+    session: AsyncSession, should_create_embeddings: bool = False
+) -> None:
+    """Run the full database seed."""
+    await anyio.to_thread.run_sync(run_migrations)
+
+    print("Creating users...")
+    await create_users(session)
+
+    print("\nCreating items...")
+    items = await create_items(session)
+
+    if should_create_embeddings:
+        print("\nCreating embeddings...")
+        await create_embeddings(session, items)
+
+    print("\nDone! Database seeded successfully.")
+
+
+async def drop_tables(session: AsyncSession) -> None:
+    for table in {Item, Message, Conversation, RefreshToken, UserOAuthAccount, User}:
+        await session.exec(delete(table))
+        await session.commit()
+
+
+async def _main(should_create_embeddings: bool = False) -> None:
+    engine = create_db_engine()
+    async with AsyncSession(engine) as session:
+        await drop_tables(session)
+        await seed_database(session)
+    await destroy_engine(engine)
+
+
 def main() -> None:
     """Sync entry point for the ``seed`` console script."""
-    anyio.run(seed_database)
+    # TODO: Arg parse for should_create_embeddings
+    anyio.run(_main)
 
 
 if __name__ == "__main__":
