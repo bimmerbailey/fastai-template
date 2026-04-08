@@ -7,7 +7,6 @@ from typing import Literal
 
 import httpx
 import structlog.stdlib
-
 from pydantic_ai.embeddings import Embedder, EmbeddingModel, EmbeddingResult
 from pydantic_ai.embeddings.settings import EmbeddingSettings as PAIEmbeddingSettings
 

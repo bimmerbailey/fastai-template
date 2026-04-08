@@ -5,7 +5,6 @@ import structlog.contextvars
 from fastapi import Depends, HTTPException, Request, Security, status
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from pydantic_ai import Agent
-
 from pydantic_ai.embeddings import Embedder
 
 from fastai.agents.dependencies import AgentDeps

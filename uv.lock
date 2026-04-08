@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-03-25T10:38:02.336354Z"
+exclude-newer = "2026-03-25T12:03:22.523356Z"
 exclude-newer-span = "P2W"
 
 [manifest]
@@ -124,11 +124,11 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "joserfc", specifier = ">=1.6.0" },
-    { name = "logfire", extras = ["fastapi", "sqlalchemy"], specifier = ">=3.16.1" },
+    { name = "logfire", extras = ["fastapi", "sqlalchemy"], specifier = ">=4.27.0" },
     { name = "pgvector", specifier = ">=0.4.1" },
     { name = "pwdlib", extras = ["argon2"], specifier = ">=0.3.0" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.11.5" },
-    { name = "pydantic-ai-slim", extras = ["logfire", "openai", "openrouter", "anthropic"], specifier = ">=0.2.12" },
+    { name = "pydantic-ai-slim", extras = ["logfire", "openai", "openrouter", "anthropic"], specifier = ">=1.67.0" },
     { name = "pydantic-settings", specifier = ">=2.9.1" },
     { name = "python-multipart", specifier = ">=0.0.22" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.41" },
@@ -599,7 +599,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.16.1" },
     { name = "argon2-cffi", specifier = ">=25.1.0" },
     { name = "asgi-correlation-id", specifier = ">=4.3.4" },
-    { name = "asyncpg", specifier = ">=0.30.0" },
+    { name = "asyncpg", specifier = ">=0.31.0" },
     { name = "authlib", specifier = ">=1.6.0" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "fastmcp", specifier = ">=2.5.2" },

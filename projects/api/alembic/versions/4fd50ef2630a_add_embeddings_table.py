@@ -9,8 +9,8 @@ Create Date: 2026-04-06 06:44:22.598699
 import os
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from pgvector.sqlalchemy import HALFVEC
 from sqlalchemy.dialects import postgresql
 

@@ -1,13 +1,16 @@
-import anyio
 from decimal import Decimal
 from pathlib import Path
 
+import anyio
 from alembic import command
 from alembic.config import Config
+from anyio import to_thread
 from faker import Faker
-from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import delete
+from sqlmodel.ext.asyncio.session import AsyncSession
 
+from fastai.auth import RefreshToken, UserOAuthAccount
+from fastai.chats.models import Conversation, Message
 from fastai.database.core import create_db_engine, destroy_engine
 from fastai.embeddings.core import build_item_text, embed_and_store
 from fastai.embeddings.providers import create_embedder
@@ -16,9 +19,6 @@ from fastai.items.models import Item
 from fastai.items.schemas import ItemCreate
 from fastai.users.models import User
 from fastai.users.schemas import UserCreate
-from fastai.chats.models import Conversation, Message
-from fastai.auth import RefreshToken, UserOAuthAccount
-
 
 fake = Faker()
 
@@ -195,7 +195,7 @@ async def seed_database(
     session: AsyncSession, should_create_embeddings: bool = False
 ) -> None:
     """Run the full database seed."""
-    await anyio.to_thread.run_sync(run_migrations)
+    await to_thread.run_sync(run_migrations)
 
     print("Creating users...")
     await create_users(session)

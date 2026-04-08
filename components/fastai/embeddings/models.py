@@ -9,7 +9,6 @@ from sqlalchemy.dialects import postgresql
 from sqlmodel import Column, DateTime, Field, SQLModel, func, select, text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-
 from fastai.embeddings.schemas import EmbeddingCreate, SearchResult
 from fastai.embeddings.settings import EmbeddingSettings
 from fastai.utils.fields import date_now

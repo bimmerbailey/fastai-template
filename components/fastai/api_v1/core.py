@@ -1,14 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic_ai import Agent
+from pydantic_ai.embeddings import Embedder
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fastai.agents.core import create_agent
 from fastai.agents.dependencies import AgentDeps
 from fastai.agents.settings import AgentSettings
 from fastai.api_v1 import authentication, chats, conversations, health, items
-from pydantic_ai.embeddings import Embedder
-
 from fastai.auth.settings import AuthSettings
 from fastai.auth.token_service import TokenService
 from fastai.embeddings.providers import create_embedder
