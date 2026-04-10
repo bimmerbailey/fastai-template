@@ -12,7 +12,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from fastai.auth import RefreshToken, UserOAuthAccount
 from fastai.chats.models import Conversation, Message
 from fastai.database.core import create_db_engine, destroy_engine
-from fastai.embeddings.core import KnowledgeBase, build_item_text
+from fastai.embeddings.core import KnowledgeBase
 from fastai.embeddings.models import Embedding
 from fastai.embeddings.providers import create_embedder
 from fastai.embeddings.settings import EmbeddingSettings
@@ -166,21 +166,14 @@ async def create_embeddings(session: AsyncSession, items: list[Item]) -> None:
     kb = KnowledgeBase(create_embedder(settings), settings)
     for item in items:
         await session.refresh(item)
-        name = item.name
-        content = build_item_text(
-            name=name,
-            description=item.description,
-            cost=item.cost,
-            quantity=item.quantity,
-        )
         await kb.embed_and_store(
             session,
             source_type="item",
             source_id=item.id,
-            content=content,
-            metadata={"name": name},
+            content=item.build_embedding_text(),
+            metadata={"name": item.name},
         )
-        print(f"  Embedded item: {name}")
+        print(f"  Embedded item: {item.name}")
 
 
 def run_migrations() -> None:

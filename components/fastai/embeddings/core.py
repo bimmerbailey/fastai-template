@@ -126,32 +126,3 @@ class KnowledgeBase:
             results_count=len(results),
         )
         return results
-
-
-def build_item_text(
-    name: str,
-    description: str | None = None,
-    cost: Decimal | None = None,
-    quantity: int = 0,
-) -> str:
-    """Build embeddable text from item fields, enriched with metadata labels.
-
-    Field labels give the embedding model semantic anchors, improving
-    retrieval quality for short content.
-
-    Args:
-        name: The item name.
-        description: Optional item description.
-        cost: Optional item cost (Decimal or similar).
-        quantity: Item quantity.
-
-    Returns:
-        A metadata-enriched text string for embedding.
-    """
-    parts = [f"Item: {name}"]
-    if description:
-        parts.append(f"Description: {description}")
-    if cost is not None:
-        parts.append(f"Cost: ${cost}")
-    parts.append(f"Quantity: {quantity}")
-    return "\n".join(parts)

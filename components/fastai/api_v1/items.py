@@ -8,7 +8,7 @@ from fastai.api_v1.dependencies import (
     CurrentUserDep,
     KnowledgeBaseDep,
 )
-from fastai.embeddings.core import KnowledgeBase, build_item_text
+from fastai.embeddings.core import KnowledgeBase
 from fastai.embeddings.exceptions import EmbeddingError
 from fastai.embeddings.models import Embedding
 from fastai.items.models import Item
@@ -24,17 +24,11 @@ router = APIRouter(prefix="/items", tags=["Items"])
 async def _embed_item(session: SessionDep, item: Item, kb: KnowledgeBase) -> None:
     """Build text from item fields and store the embedding. Logs and swallows errors."""
     try:
-        content = build_item_text(
-            name=item.name,
-            description=item.description,
-            cost=item.cost,
-            quantity=item.quantity,
-        )
         await kb.embed_and_store(
             session,
             source_type="item",
             source_id=item.id,
-            content=content,
+            content=item.build_embedding_text(),
             metadata={"name": item.name},
         )
         await session.refresh(item)
