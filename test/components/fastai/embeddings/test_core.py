@@ -4,7 +4,8 @@ from decimal import Decimal
 import pytest
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from fastai.embeddings.core import KnowledgeBase, build_item_text
+from fastai.embeddings.core import KnowledgeBase
+from fastai.items.models import Item
 
 integration = pytest.mark.integration
 

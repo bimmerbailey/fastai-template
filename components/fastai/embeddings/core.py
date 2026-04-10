@@ -1,8 +1,7 @@
 import uuid
-from decimal import Decimal
 
 import structlog.stdlib
-from pydantic_ai.embeddings import Embedder
+from pydantic_ai.embeddings import Embedder, EmbeddingModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from fastai.embeddings.exceptions import EmbeddingNotFoundError
@@ -11,14 +10,6 @@ from fastai.embeddings.schemas import EmbeddingCreate, SearchResult
 from fastai.embeddings.settings import EmbeddingSettings
 
 logger = structlog.stdlib.get_logger(__name__)
-
-
-def _embedder_model_name(embedder: Embedder) -> str:
-    """Derive a 'provider:model' identifier from an Embedder instance."""
-    model = embedder.model
-    if isinstance(model, str):
-        return model
-    return f"{model.system}:{model.model_name}"
 
 
 class KnowledgeBase:
@@ -31,6 +22,20 @@ class KnowledgeBase:
     ) -> None:
         self.embedder = embedder
         self.settings = settings or EmbeddingSettings()
+
+    @property
+    def model_name(self) -> str:
+        """Derive a 'provider:model' identifier from the embedder.
+
+        create_embedder() uses defer_model_check=False so the model is always
+        eagerly resolved to an EmbeddingModel with .system and .model_name.
+        The isinstance fallback handles the edge case where an Embedder is
+        constructed with a raw string and deferred resolution.
+        """
+        model: EmbeddingModel | str = self.embedder.model
+        if isinstance(model, str):
+            return model
+        return f"{model.system}:{model.model_name}"
 
     async def embed_and_store(
         self,
@@ -52,10 +57,8 @@ class KnowledgeBase:
         Returns:
             The created or existing Embedding record.
         """
-        model_name = _embedder_model_name(self.embedder)
-
         if not await Embedding.needs_update(
-            session, source_type, source_id, content, model_name
+            session, source_type, source_id, content, self.model_name
         ):
             logger.debug(
                 "Content unchanged, skipping embedding",
@@ -63,7 +66,7 @@ class KnowledgeBase:
                 source_id=str(source_id),
             )
             existing = await Embedding.get_by_source(
-                session, source_type, source_id, model_name
+                session, source_type, source_id, self.model_name
             )
             if existing is None:
                 raise EmbeddingNotFoundError(
@@ -81,13 +84,13 @@ class KnowledgeBase:
             chunk_text=content,
             extra_metadata=metadata or {},
         )
-        record = await Embedding.upsert(session, embedding_in, vector, model_name)
+        record = await Embedding.upsert(session, embedding_in, vector, self.model_name)
 
         logger.info(
             "Embedding stored",
             source_type=source_type,
             source_id=str(source_id),
-            model=model_name,
+            model=self.model_name,
         )
         return record
 

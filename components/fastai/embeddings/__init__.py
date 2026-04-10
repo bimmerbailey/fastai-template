@@ -1,4 +1,4 @@
-from fastai.embeddings.core import KnowledgeBase, build_item_text
+from fastai.embeddings.core import KnowledgeBase
 from fastai.embeddings.exceptions import (
     EmbeddingError,
     EmbeddingNotFoundError,
@@ -19,6 +19,5 @@ __all__ = [
     "KnowledgeBase",
     "OllamaEmbeddingModel",
     "SearchResult",
-    "build_item_text",
     "create_embedder",
 ]

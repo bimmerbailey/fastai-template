@@ -105,6 +105,6 @@ def create_embedder(settings: EmbeddingSettings) -> Embedder:
         model = OllamaEmbeddingModel(model_name, settings=pai_settings)
         return Embedder(model)
 
-    # For OpenAI and other built-in providers, pass the full string directly.
-    # pydantic-ai resolves "openai:text-embedding-3-small" natively.
-    return Embedder(model_str, settings=pai_settings)
+    # For OpenAI and other built-in providers, resolve the model eagerly so
+    # embedder.model is always an EmbeddingModel with .system and .model_name.
+    return Embedder(model_str, settings=pai_settings, defer_model_check=False)
