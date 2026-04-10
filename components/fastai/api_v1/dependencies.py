@@ -5,12 +5,12 @@ import structlog.contextvars
 from fastapi import Depends, HTTPException, Request, Security, status
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from pydantic_ai import Agent
-from pydantic_ai.embeddings import Embedder
 
 from fastai.agents.dependencies import AgentDeps
 from fastai.agents.settings import AgentSettings
 from fastai.auth.settings import AuthSettings
 from fastai.auth.token_service import TokenError, TokenService
+from fastai.embeddings.core import KnowledgeBase
 from fastai.users.models import User
 from fastai.utils.dependencies import SessionDep
 
@@ -35,10 +35,10 @@ def get_agent_settings(request: Request) -> AgentSettings:
     return settings
 
 
-def get_embedder(request: Request) -> Embedder:
-    """Retrieve the pydantic-ai Embedder from application state."""
-    embedder: Embedder = request.app.state.embedder
-    return embedder
+def get_knowledge_base(request: Request) -> KnowledgeBase:
+    """Retrieve the KnowledgeBase from application state."""
+    kb: KnowledgeBase = request.app.state.knowledge_base
+    return kb
 
 
 def get_auth_settings(request: Request) -> AuthSettings:
@@ -141,7 +141,7 @@ async def get_scoped_user(
 
 AgentDep = Annotated[Agent[AgentDeps, str], Depends(get_agent)]
 AgentSettingsDep = Annotated[AgentSettings, Depends(get_agent_settings)]
-EmbedderDep = Annotated[Embedder, Depends(get_embedder)]
+KnowledgeBaseDep = Annotated[KnowledgeBase, Depends(get_knowledge_base)]
 AuthSettingsDep = Annotated[AuthSettings, Depends(get_auth_settings)]
 TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]
 CurrentUserDep = Annotated[User, Security(get_scoped_user)]

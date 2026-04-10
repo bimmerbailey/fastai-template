@@ -116,13 +116,10 @@ def _register_tools(agent: Agent[AgentDeps, str]) -> None:
             source_type: Optional filter by source type (e.g. "item").
                 Defaults to searching all source types.
         """
-        from fastai.embeddings.core import semantic_search as _semantic_search
-
         async with AsyncSession(ctx.deps.engine) as session:
-            results = await _semantic_search(
+            results = await ctx.deps.knowledge_base.search(
                 session,
                 query=query,
-                embedder=ctx.deps.embedder,
                 source_type=source_type,
                 limit=5,
             )

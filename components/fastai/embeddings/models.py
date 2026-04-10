@@ -4,7 +4,14 @@ from typing import Any, Optional
 
 from pgvector.sqlalchemy import HALFVEC
 from pydantic import AwareDatetime
-from sqlalchemy import Index, SmallInteger, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Index,
+    SmallInteger,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy import delete as sa_delete
 from sqlalchemy.dialects import postgresql
 from sqlmodel import Column, DateTime, Field, SQLModel, func, select, text
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -254,17 +261,14 @@ class Embedding(SQLModel, table=True):
         Returns:
             The number of records deleted.
         """
-        statement = select(cls).where(
-            cls.source_type == source_type,
-            cls.source_id == source_id,
+        statement = (
+            sa_delete(cls)
+            .where(cls.source_type == source_type)  # type: ignore[arg-type]
+            .where(cls.source_id == source_id)  # type: ignore[arg-type]
         )
-        result = await session.exec(statement)
-        records = list(result.all())
-        for record in records:
-            await session.delete(record)
-        if records:
-            await session.commit()
-        return len(records)
+        result = await session.exec(statement)  # type: ignore[call-overload]
+        await session.commit()
+        return result.rowcount  # type: ignore[union-attr]
 
     @classmethod
     async def needs_update(

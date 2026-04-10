@@ -1,3 +1,4 @@
+import hashlib
 from collections.abc import Sequence
 from typing import AsyncGenerator, Generator, Literal
 
@@ -20,6 +21,7 @@ from fastai.database.core import (
     destroy_engine,
     get_db_session,
 )
+from fastai.embeddings.core import KnowledgeBase
 from fastai.embeddings.settings import EmbeddingSettings
 from fastai.users import User, UserCreate
 
@@ -105,11 +107,9 @@ def _deterministic_vector(
     text: str, dimensions: int = _TEST_EMBEDDING_DIM
 ) -> list[float]:
     """Generate a deterministic vector from text for testing."""
-    import hashlib
-
     seed = int(hashlib.md5(text.encode()).hexdigest(), 16)
     vector = []
-    for i in range(dimensions):
+    for _ in range(dimensions):
         seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF
         vector.append((seed / 0x7FFFFFFF) * 2 - 1)
     return vector
@@ -148,6 +148,12 @@ class DeterministicEmbeddingModel(EmbeddingModel):
 def embedder() -> Embedder:
     """Create a test Embedder with deterministic vectors."""
     return Embedder(DeterministicEmbeddingModel())
+
+
+@pytest.fixture
+def knowledge_base(embedder: Embedder) -> KnowledgeBase:
+    """Create a test KnowledgeBase with deterministic embeddings."""
+    return KnowledgeBase(embedder)
 
 
 @pytest.fixture

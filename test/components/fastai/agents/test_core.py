@@ -1,11 +1,11 @@
 import pytest
 from pydantic_ai import Agent, ModelResponse, ToolCallPart, models
-from pydantic_ai.embeddings import Embedder
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fastai.agents.core import create_agent, get_usage_limits
 from fastai.agents.dependencies import AgentDeps
 from fastai.agents.settings import AgentSettings
+from fastai.embeddings.core import KnowledgeBase
 
 models.ALLOW_MODEL_REQUESTS = False
 
@@ -35,13 +35,13 @@ async def test_agent_responds_to_simple_message(
     test_agent: Agent[AgentDeps, str],
     test_db_engine: AsyncEngine,
     agent_settings: AgentSettings,
-    embedder: Embedder,
+    knowledge_base: KnowledgeBase,
 ) -> None:
     """Agent produces a response for a simple message using TestModel."""
     deps = AgentDeps(
         engine=test_db_engine,
         settings=agent_settings,
-        embedder=embedder,
+        knowledge_base=knowledge_base,
     )
 
     result = await test_agent.run("Hello, how are you?", deps=deps)
@@ -55,13 +55,13 @@ async def test_agent_calls_get_current_time_tool(
     test_agent: Agent[AgentDeps, str],
     test_db_engine: AsyncEngine,
     agent_settings: AgentSettings,
-    embedder: Embedder,
+    knowledge_base: KnowledgeBase,
 ) -> None:
     """Agent calls the get_current_time tool and incorporates the result."""
     deps = AgentDeps(
         engine=test_db_engine,
         settings=agent_settings,
-        embedder=embedder,
+        knowledge_base=knowledge_base,
     )
 
     result = await test_agent.run("What time is it?", deps=deps)
@@ -77,13 +77,13 @@ async def test_agent_calls_search_items_tool(
     test_agent: Agent[AgentDeps, str],
     test_db_engine: AsyncEngine,
     agent_settings: AgentSettings,
-    embedder: Embedder,
+    knowledge_base: KnowledgeBase,
 ) -> None:
     """Agent calls the search_items tool when asked about inventory."""
     deps = AgentDeps(
         engine=test_db_engine,
         settings=agent_settings,
-        embedder=embedder,
+        knowledge_base=knowledge_base,
     )
 
     result = await test_agent.run("Search for widgets in the inventory", deps=deps)
@@ -98,13 +98,13 @@ async def test_agent_calls_get_item_count_tool(
     test_agent: Agent[AgentDeps, str],
     test_db_engine: AsyncEngine,
     agent_settings: AgentSettings,
-    embedder: Embedder,
+    knowledge_base: KnowledgeBase,
 ) -> None:
     """Agent calls the get_item_count tool."""
     deps = AgentDeps(
         engine=test_db_engine,
         settings=agent_settings,
-        embedder=embedder,
+        knowledge_base=knowledge_base,
     )
 
     result = await test_agent.run("How many items are in inventory?", deps=deps)

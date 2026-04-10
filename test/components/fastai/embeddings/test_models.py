@@ -1,5 +1,6 @@
 import hashlib
 import uuid
+from test.conftest import _deterministic_vector
 
 import pytest
 import pytest_asyncio
@@ -7,25 +8,10 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from fastai.embeddings.models import Embedding
 from fastai.embeddings.schemas import EmbeddingCreate
-from fastai.embeddings.settings import EmbeddingSettings
 
 pytestmark = pytest.mark.integration
 
 TEST_MODEL_NAME = "test:mock-embed"
-_TEST_EMBEDDING_DIM = EmbeddingSettings().dimensions
-
-
-def _deterministic_vector(
-    text: str, dimensions: int = _TEST_EMBEDDING_DIM
-) -> list[float]:
-    """Generate a deterministic vector from text for testing."""
-    seed = int(hashlib.md5(text.encode()).hexdigest(), 16)
-    # Simple deterministic pseudo-random sequence
-    vector = []
-    for i in range(dimensions):
-        seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF
-        vector.append((seed / 0x7FFFFFFF) * 2 - 1)
-    return vector
 
 
 @pytest_asyncio.fixture

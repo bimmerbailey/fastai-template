@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import uuid
 
 import structlog.stdlib
@@ -8,9 +6,10 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastai.api_v1.dependencies import (
     CurrentAdminDep,
     CurrentUserDep,
-    EmbedderDep,
+    KnowledgeBaseDep,
 )
-from fastai.embeddings.core import build_item_text, embed_and_store
+from fastai.embeddings.core import KnowledgeBase, build_item_text
+from fastai.embeddings.exceptions import EmbeddingError
 from fastai.embeddings.models import Embedding
 from fastai.items.models import Item
 from fastai.items.schemas import ItemCreate, ItemRead, ItemUpdate
@@ -19,6 +18,32 @@ from fastai.utils.dependencies import SessionDep
 logger = structlog.stdlib.get_logger(__name__)
 
 router = APIRouter(prefix="/items", tags=["Items"])
+
+
+# TODO: Remove once we add documents
+async def _embed_item(session: SessionDep, item: Item, kb: KnowledgeBase) -> None:
+    """Build text from item fields and store the embedding. Logs and swallows errors."""
+    try:
+        content = build_item_text(
+            name=item.name,
+            description=item.description,
+            cost=item.cost,
+            quantity=item.quantity,
+        )
+        await kb.embed_and_store(
+            session,
+            source_type="item",
+            source_id=item.id,
+            content=content,
+            metadata={"name": item.name},
+        )
+        await session.refresh(item)
+    except EmbeddingError:
+        logger.warning(
+            "Failed to embed item, continuing without embedding",
+            item_id=str(item.id),
+            exc_info=True,
+        )
 
 
 @router.get("", response_model=list[ItemRead])
@@ -50,31 +75,11 @@ async def create_item(
     session: SessionDep,
     _: CurrentAdminDep,
     item_in: ItemCreate,
-    embedder: EmbedderDep,
+    kb: KnowledgeBaseDep,
 ) -> Item:
     """Create a new item."""
     item = await Item.create(session, item_in)
-    try:
-        content = build_item_text(
-            name=item.name,
-            description=item.description,
-            cost=item.cost,
-            quantity=item.quantity,
-        )
-        await embed_and_store(
-            session,
-            source_type="item",
-            source_id=item.id,
-            content=content,
-            embedder=embedder,
-            metadata={"name": item.name},
-        )
-    except Exception:
-        logger.warning(
-            "Failed to embed item, continuing without embedding",
-            item_id=str(item.id),
-            exc_info=True,
-        )
+    await _embed_item(session, item, kb)
     return item
 
 
@@ -84,7 +89,7 @@ async def update_item(
     _: CurrentUserDep,
     item_id: uuid.UUID,
     item_in: ItemUpdate,
-    embedder: EmbedderDep,
+    kb: KnowledgeBaseDep,
 ) -> Item:
     """Partially update an item."""
     item = await Item.get(session, item_id)
@@ -94,27 +99,7 @@ async def update_item(
             detail="Item not found",
         )
     item = await item.update(session, item_in)
-    try:
-        content = build_item_text(
-            name=item.name,
-            description=item.description,
-            cost=item.cost,
-            quantity=item.quantity,
-        )
-        await embed_and_store(
-            session,
-            source_type="item",
-            source_id=item.id,
-            content=content,
-            embedder=embedder,
-            metadata={"name": item.name},
-        )
-    except Exception:
-        logger.warning(
-            "Failed to embed item, continuing without embedding",
-            item_id=str(item.id),
-            exc_info=True,
-        )
+    await _embed_item(session, item, kb)
     return item
 
 
@@ -123,7 +108,6 @@ async def delete_item(
     session: SessionDep,
     _: CurrentAdminDep,
     item_id: uuid.UUID,
-    embedder: EmbedderDep,
 ) -> None:
     """Delete an item."""
     item = await Item.get(session, item_id)

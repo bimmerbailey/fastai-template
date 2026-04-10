@@ -12,7 +12,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from fastai.auth import RefreshToken, UserOAuthAccount
 from fastai.chats.models import Conversation, Message
 from fastai.database.core import create_db_engine, destroy_engine
-from fastai.embeddings.core import build_item_text, embed_and_store
+from fastai.embeddings.core import KnowledgeBase, build_item_text
+from fastai.embeddings.models import Embedding
 from fastai.embeddings.providers import create_embedder
 from fastai.embeddings.settings import EmbeddingSettings
 from fastai.items.models import Item
@@ -162,7 +163,7 @@ async def create_items(session: AsyncSession) -> list[Item]:
 async def create_embeddings(session: AsyncSession, items: list[Item]) -> None:
     """Generate and store embeddings for seeded items."""
     settings = EmbeddingSettings()
-    embedder = create_embedder(settings)
+    kb = KnowledgeBase(create_embedder(settings), settings)
     for item in items:
         await session.refresh(item)
         name = item.name
@@ -172,12 +173,11 @@ async def create_embeddings(session: AsyncSession, items: list[Item]) -> None:
             cost=item.cost,
             quantity=item.quantity,
         )
-        await embed_and_store(
+        await kb.embed_and_store(
             session,
             source_type="item",
             source_id=item.id,
             content=content,
-            embedder=embedder,
             metadata={"name": name},
         )
         print(f"  Embedded item: {name}")
@@ -211,7 +211,15 @@ async def seed_database(
 
 
 async def drop_tables(session: AsyncSession) -> None:
-    for table in {Item, Message, Conversation, RefreshToken, UserOAuthAccount, User}:
+    for table in [
+        Embedding,
+        Item,
+        Message,
+        Conversation,
+        RefreshToken,
+        UserOAuthAccount,
+        User,
+    ]:
         await session.exec(delete(table))
         await session.commit()
 
@@ -220,7 +228,7 @@ async def _main(should_create_embeddings: bool = False) -> None:
     engine = create_db_engine()
     async with AsyncSession(engine) as session:
         await drop_tables(session)
-        await seed_database(session)
+        await seed_database(session, should_create_embeddings)
     await destroy_engine(engine)
 
 

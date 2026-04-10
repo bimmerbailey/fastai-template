@@ -10,7 +10,7 @@ from fastai.api_v1.dependencies import (
     AgentDep,
     AgentSettingsDep,
     CurrentUserDep,
-    EmbedderDep,
+    KnowledgeBaseDep,
 )
 from fastai.chats.models import Conversation, Message
 from fastai.chats.schemas import (
@@ -42,7 +42,7 @@ async def chat(
     chat_request: ChatRequest,
     agent: AgentDep,
     settings: AgentSettingsDep,
-    embedder: EmbedderDep,
+    kb: KnowledgeBaseDep,
     engine: EngineDep,
     session: SessionDep,
 ) -> ChatResponse:
@@ -101,7 +101,7 @@ async def chat(
     deps = AgentDeps(
         engine=engine,
         settings=settings,
-        embedder=embedder,
+        knowledge_base=kb,
     )
     usage_limits = get_usage_limits(settings)
 
