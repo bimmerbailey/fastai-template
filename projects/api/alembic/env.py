@@ -1,29 +1,31 @@
 import asyncio
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from sqlmodel import SQLModel
 
-from alembic import context
+from fastai.auth.models import RefreshToken, UserOAuthAccount  # noqa: F401
+from fastai.chats.models import Conversation, Message  # noqa: F401
+
+# Override URL from app settings so config isn't duplicated
+from fastai.database.core import PostgresSettings
 
 # Import ALL table models to populate SQLModel.metadata
-from fastai.users.models import User  # noqa: F401
+from fastai.embeddings.models import Embedding  # noqa: F401
 from fastai.items.models import Item  # noqa: F401
-from fastai.chats.models import Conversation, Message  # noqa: F401
-from fastai.auth.models import UserOAuthAccount, RefreshToken  # noqa: F401
+from fastai.users.models import User  # noqa: F401
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Override URL from app settings so config isn't duplicated
-from fastai.database.core import PostgresSettings
-
 try:
-    config.set_main_option("sqlalchemy.url", str(PostgresSettings().dsn))
+    dsn = str(PostgresSettings().dsn)  # pyright: ignore [reportCallIssue]
+    config.set_main_option("sqlalchemy.url", dsn)
 except Exception:
     pass  # Fall back to alembic.ini value
 

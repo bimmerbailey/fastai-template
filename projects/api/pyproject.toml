@@ -15,7 +15,7 @@ dependencies = [
     "fastapi>=0.115.12",
     "gunicorn>=23.0.0",
     "joserfc>=1.6.0",
-    "logfire[fastapi,sqlalchemy]>=3.16.1",
+    "logfire[fastapi,sqlalchemy]>=4.27.0",
     "pydantic[email]>=2.11.5",
     "pydantic-settings>=2.9.1",
     "sqlalchemy[asyncio]>=2.0.41",
@@ -24,9 +24,10 @@ dependencies = [
     "structlog>=25.3.0",
     "pwdlib[argon2]>=0.3.0",
     "uvicorn>=0.34.2",
-    "pydantic-ai-slim[logfire,openai,openrouter,anthropic]>=0.2.12",
+    "pydantic-ai-slim[logfire,openai,openrouter,anthropic]>=1.67.0",
     "python-multipart>=0.0.22",
     "asyncpg>=0.31.0",
+    "pgvector>=0.4.1",
 ]
 
 [tool.hatch.build.hooks.polylith-bricks]
@@ -43,3 +44,4 @@ dependencies = [
 "../../components/fastai/items" = "fastai/items"
 "../../components/fastai/agents" = "fastai/agents"
 "../../components/fastai/chats" = "fastai/chats"
+"../../components/fastai/embeddings" = "fastai/embeddings"

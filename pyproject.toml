@@ -8,7 +8,7 @@ dependencies = [
     "alembic>=1.16.1",
     "argon2-cffi>=25.1.0",
     "asgi-correlation-id>=4.3.4",
-    "asyncpg>=0.30.0",
+    "asyncpg>=0.31.0",
     "fastapi>=0.115.12",
     "fastmcp>=2.5.2",
     "gunicorn>=23.0.0",
@@ -25,6 +25,7 @@ dependencies = [
     "structlog>=25.3.0",
     "uvicorn>=0.34.2",
     "python-multipart>=0.0.22",
+    "pgvector>=0.4.1",
 ]
 
 [project.scripts]
@@ -44,6 +45,7 @@ dev = [
 
 [tool.uv]
 managed = true
+exclude-newer = "2 weeks"
 
 [tool.uv.workspace]
 members = ["projects/*"]
@@ -70,6 +72,7 @@ dev-mode-dirs = ["components", "bases", "development", "."]
 "components/fastai/api_v1" = "fastai/api_v1"
 "components/fastai/agents" = "fastai/agents"
 "components/fastai/chats" = "fastai/chats"
+"components/fastai/embeddings" = "fastai/embeddings"
 
 
 [tool.pytest.ini_options]

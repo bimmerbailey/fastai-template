@@ -10,7 +10,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from fastai.api_v1.dependencies import AuthSettingsDep, TokenServiceDep
 from fastai.auth.models import RefreshToken
-from fastai.auth.schemas import TokenResponse, OAuth2PasswordRequestBody
+from fastai.auth.schemas import OAuth2PasswordRequestBody, TokenResponse
 from fastai.auth.settings import AuthSettings
 from fastai.auth.token_service import TokenError, TokenService
 from fastai.users.exceptions import (

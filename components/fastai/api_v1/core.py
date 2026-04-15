@@ -9,6 +9,9 @@ from fastai.agents.settings import AgentSettings
 from fastai.api_v1 import authentication, chats, conversations, health, items
 from fastai.auth.settings import AuthSettings
 from fastai.auth.token_service import TokenService
+from fastai.embeddings.core import KnowledgeBase
+from fastai.embeddings.providers import create_embedder
+from fastai.embeddings.settings import EmbeddingSettings
 
 
 def init_api_v1(
@@ -16,6 +19,8 @@ def init_api_v1(
     agent: Agent[AgentDeps, str] | None = None,
     agent_settings: AgentSettings | None = None,
     auth_settings: AuthSettings | None = None,
+    embedding_settings: EmbeddingSettings | None = None,
+    knowledge_base: KnowledgeBase | None = None,
 ) -> FastAPI:
     """Create the API v1 FastAPI sub-application.
 
@@ -32,9 +37,14 @@ def init_api_v1(
             from environment variables if not provided.
         auth_settings: JWT authentication settings. Defaults will be loaded
             from environment variables if not provided.
+        embedding_settings: Settings for the embedding service. Defaults
+            will be loaded from environment variables if not provided.
+         knowledge_base: class to interact with previous knowledge/documents
     """
     settings = agent_settings or AgentSettings()
     auth = auth_settings or AuthSettings()  # pyright: ignore[reportCallIssue]  # reads secret_key from env
+    emb_settings = embedding_settings or EmbeddingSettings()
+    kb = knowledge_base or KnowledgeBase(create_embedder(emb_settings), emb_settings)
 
     app = FastAPI(
         title="API v1",
@@ -55,6 +65,7 @@ def init_api_v1(
     app.state.agent = agent or create_agent(settings)
     app.state.auth_settings = auth
     app.state.token_service = TokenService(auth)
+    app.state.knowledge_base = kb
 
     app.include_router(authentication.router)
     app.include_router(items.router)

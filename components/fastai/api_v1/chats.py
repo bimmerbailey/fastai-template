@@ -6,7 +6,12 @@ from fastapi import APIRouter, HTTPException, status
 from fastai.agents.core import get_usage_limits, messages_to_history
 from fastai.agents.dependencies import AgentDeps
 from fastai.agents.schemas import ChatRequest, ChatResponse, ChatUsage
-from fastai.api_v1.dependencies import AgentDep, AgentSettingsDep, CurrentUserDep
+from fastai.api_v1.dependencies import (
+    AgentDep,
+    AgentSettingsDep,
+    CurrentUserDep,
+    KnowledgeBaseDep,
+)
 from fastai.chats.models import Conversation, Message
 from fastai.chats.schemas import (
     ConversationCreate,
@@ -37,6 +42,7 @@ async def chat(
     chat_request: ChatRequest,
     agent: AgentDep,
     settings: AgentSettingsDep,
+    kb: KnowledgeBaseDep,
     engine: EngineDep,
     session: SessionDep,
 ) -> ChatResponse:
@@ -92,7 +98,11 @@ async def chat(
     )
 
     # ── Run the agent ──
-    deps = AgentDeps(engine=engine, settings=settings)
+    deps = AgentDeps(
+        engine=engine,
+        settings=settings,
+        knowledge_base=kb,
+    )
     usage_limits = get_usage_limits(settings)
 
     result = await agent.run(

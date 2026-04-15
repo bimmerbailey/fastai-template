@@ -41,7 +41,7 @@ services:
       - ./frontend/vite.config.ts:/app/vite.config.ts
 
   postgres:
-    image: postgres:18.1-alpine3.21
+    image: pgvector/pgvector:0.8.2-pg18
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Password123!

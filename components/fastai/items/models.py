@@ -105,6 +105,20 @@ class Item(ItemBase, TimestampMixin, table=True):
         results = await session.exec(statement)
         return list(results.all())
 
+    def build_embedding_text(self) -> str:
+        """Build embeddable text from item fields, enriched with metadata labels.
+
+        Field labels give the embedding model semantic anchors, improving
+        retrieval quality for short content.
+        """
+        parts = [f"Item: {self.name}"]
+        if self.description:
+            parts.append(f"Description: {self.description}")
+        if self.cost is not None:
+            parts.append(f"Cost: ${self.cost}")
+        parts.append(f"Quantity: {self.quantity}")
+        return "\n".join(parts)
+
     @classmethod
     async def count(cls, session: AsyncSession) -> int:
         """Get the total number of items in the database.
