@@ -73,6 +73,7 @@ dev-mode-dirs = ["components", "bases", "development", "."]
 "components/fastai/agents" = "fastai/agents"
 "components/fastai/chats" = "fastai/chats"
 "components/fastai/embeddings" = "fastai/embeddings"
+"components/fastai/documents" = "fastai/documents"
 
 
 [tool.pytest.ini_options]
