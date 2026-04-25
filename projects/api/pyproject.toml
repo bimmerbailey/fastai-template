@@ -28,6 +28,8 @@ dependencies = [
     "python-multipart>=0.0.22",
     "asyncpg>=0.31.0",
     "pgvector>=0.4.1",
+    "aioboto3>=15.5.0",
+    "types-aioboto3[essential]>=15.5.0",
 ]
 
 [tool.hatch.build.hooks.polylith-bricks]
@@ -46,3 +48,4 @@ dependencies = [
 "../../components/fastai/chats" = "fastai/chats"
 "../../components/fastai/embeddings" = "fastai/embeddings"
 "../../components/fastai/documents" = "fastai/documents"
+"../../components/fastai/storage" = "fastai/storage"

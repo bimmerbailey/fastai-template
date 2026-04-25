@@ -9,6 +9,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     env_file:
       - path: example.env
         required: true
@@ -16,6 +18,7 @@ services:
         required: false
     environment:
       - FASTAI_POSTGRES_HOSTNAME=postgres
+      - FASTAI_STORAGE_ENDPOINT_URL=http://minio:9000
     ports:
       - "8000:8000"
     volumes:
@@ -72,7 +75,25 @@ services:
       - "5050:80"
     restart: unless-stopped
 
+  minio:
+    image: pgsty/minio:RELEASE.2026-03-25T00-00-00Z
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Console
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password
+    volumes:
+      - minio:/data
+    healthcheck:
+      test: [ "CMD", "mc", "ready", "local" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  
 volumes:
   postgres:
   pgadmin:
   ollama:
+  minio:

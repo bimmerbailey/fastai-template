@@ -26,6 +26,8 @@ dependencies = [
     "uvicorn>=0.34.2",
     "python-multipart>=0.0.22",
     "pgvector>=0.4.1",
+    "aioboto3>=15.5.0",
+    "types-aioboto3[essential]>=15.5.0",
 ]
 
 [project.scripts]
@@ -74,6 +76,7 @@ dev-mode-dirs = ["components", "bases", "development", "."]
 "components/fastai/chats" = "fastai/chats"
 "components/fastai/embeddings" = "fastai/embeddings"
 "components/fastai/documents" = "fastai/documents"
+"components/fastai/storage" = "fastai/storage"
 
 
 [tool.pytest.ini_options]

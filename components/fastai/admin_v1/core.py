@@ -2,9 +2,13 @@ from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fastai.admin_v1 import documents, health, users
+from fastai.storage.core import StorageSettings
 
 
-def init_admin_v1_app(engine: AsyncEngine) -> FastAPI:
+def init_admin_v1_app(
+    engine: AsyncEngine,
+    storage_settings: StorageSettings | None = None,
+) -> FastAPI:
     """Create the admin v1 FastAPI sub-application.
 
     This is a standalone FastAPI app that can be mounted on the main
@@ -19,6 +23,7 @@ def init_admin_v1_app(engine: AsyncEngine) -> FastAPI:
     )
 
     app.state.db_engine = engine
+    app.state.storage_settings = storage_settings or StorageSettings()
 
     app.include_router(documents.router)
     app.include_router(users.router)

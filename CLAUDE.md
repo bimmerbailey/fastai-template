@@ -197,3 +197,4 @@ The template includes Pydantic AI integration for building AI applications:
 - Always use absolute paths NEVER relative paths
 - Database query logic belongs on the model as classmethods/instance methods (Active Record pattern), not in calling code like agent tools or route handlers
 - Imports should be at the top of the file unless needed inline to avoid circular imports
+- External services (S3, APIs, etc.) should have a Service class as the gateway for all interactions, and the corresponding Settings class should provide a method to create the underlying client

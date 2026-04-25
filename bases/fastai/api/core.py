@@ -14,6 +14,7 @@ from fastai.api_v1 import init_api_v1
 from fastai.database import PostgresSettings, create_db_engine, destroy_engine
 from fastai.logger.core import setup_api_logging
 from fastai.logger.middleware import LoggingMiddleware
+from fastai.storage import StorageSettings
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -36,6 +37,8 @@ def init_api(db_settings: PostgresSettings | None = None) -> FastAPI:
     logfire.instrument_pydantic_ai()
     logfire.instrument_sqlalchemy()
 
+    storage_settings = StorageSettings()
+
     engine = create_db_engine(db_settings)
     app = FastAPI(
         lifespan=partial(lifespan, engine),
@@ -56,7 +59,7 @@ def init_api(db_settings: PostgresSettings | None = None) -> FastAPI:
     logfire.instrument_fastapi(app=app)
 
     # Mount sub-applications
-    app.mount("/admin/v1", init_admin_v1_app(engine))
+    app.mount("/admin/v1", init_admin_v1_app(engine, storage_settings=storage_settings))
     app.mount("/api/v1", init_api_v1(engine))
 
     return app
