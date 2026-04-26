@@ -13,6 +13,7 @@ class DocumentBase(SQLModel):
     file_size: int = Field(ge=0)
     storage_path: str
     content_hash: str
+    embedding_status: str = "pending"
 
 
 class DocumentCreate(DocumentBase):
@@ -37,3 +38,4 @@ class DocumentUpdate(SQLModel):
     file_size: Optional[int] = Field(default=None, ge=0)
     storage_path: Optional[str] = None
     content_hash: Optional[str] = None
+    embedding_status: Optional[str] = None

@@ -179,3 +179,51 @@ async def test_count(test_db_session: AsyncSession, sample_document: Document) -
     count = await Document.count(test_db_session)
 
     assert count >= 1
+
+
+@pytest.mark.asyncio
+async def test_create_document_default_embedding_status(
+    test_db_session: AsyncSession,
+) -> None:
+    doc_in = DocumentCreate(
+        filename="test.pdf",
+        content_type="application/pdf",
+        file_size=100,
+        storage_path=f"documents/{uuid.uuid4()}/test.pdf",
+        content_hash="hash",
+    )
+    doc = await Document.create(test_db_session, doc_in)
+    assert doc.embedding_status == "pending"
+
+
+@pytest.mark.asyncio
+async def test_update_embedding_status(
+    test_db_session: AsyncSession, sample_document: Document
+) -> None:
+    updated = await sample_document.update_embedding_status(
+        test_db_session, "completed"
+    )
+    assert updated.embedding_status == "completed"
+
+
+@pytest.mark.asyncio
+async def test_get_all_by_embedding_status(
+    test_db_session: AsyncSession,
+) -> None:
+    for i, es in enumerate(["pending", "completed", "pending"]):
+        await Document.create(
+            test_db_session,
+            DocumentCreate(
+                filename=f"f{i}.pdf",
+                content_type="application/pdf",
+                file_size=100,
+                storage_path=f"documents/{uuid.uuid4()}/f{i}.pdf",
+                content_hash=f"h{i}",
+                embedding_status=es,
+            ),
+        )
+    pending = await Document.get_all_by_embedding_status(test_db_session, "pending")
+    assert len(pending) == 2
+
+    completed = await Document.get_all_by_embedding_status(test_db_session, "completed")
+    assert len(completed) == 1
