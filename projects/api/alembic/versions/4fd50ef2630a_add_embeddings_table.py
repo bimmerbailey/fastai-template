@@ -27,6 +27,7 @@ _EMBEDDING_DIM = int(os.environ.get("FASTAI_EMBEDDING_DIMENSIONS", "1536"))
 
 def upgrade() -> None:
     """Upgrade schema."""
+    op.execute("CREATE EXTENSION IF NOT EXISTS vector;")
     op.create_table(
         "embeddings",
         sa.Column("id", sa.Uuid(), nullable=False),
@@ -91,4 +92,5 @@ def downgrade() -> None:
         postgresql_ops={"embedding": "halfvec_cosine_ops"},
     )
     op.drop_table("embeddings")
+    op.execute("DROP EXTENSION IF EXISTS vector;")
     # ### end Alembic commands ###
