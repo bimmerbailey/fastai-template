@@ -7,7 +7,7 @@ from fastai.storage.core import StorageSettings
 
 def init_admin_v1_app(
     engine: AsyncEngine,
-    storage_settings: StorageSettings | None = None,
+    storage_settings: StorageSettings,
 ) -> FastAPI:
     """Create the admin v1 FastAPI sub-application.
 
@@ -23,7 +23,7 @@ def init_admin_v1_app(
     )
 
     app.state.db_engine = engine
-    app.state.storage_settings = storage_settings or StorageSettings()
+    app.state.storage_settings = storage_settings
 
     app.include_router(documents.router)
     app.include_router(users.router)

@@ -37,7 +37,7 @@ def init_api(db_settings: PostgresSettings | None = None) -> FastAPI:
     logfire.instrument_pydantic_ai()
     logfire.instrument_sqlalchemy()
 
-    storage_settings = StorageSettings()
+    storage_settings = StorageSettings()  # pyright: ignore[reportCallIssue]
 
     engine = create_db_engine(db_settings)
     app = FastAPI(

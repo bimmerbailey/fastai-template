@@ -1,10 +1,14 @@
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query, status
+import structlog.stdlib
+from fastapi import APIRouter, Form, HTTPException, Query, UploadFile, status
 
+from fastai.admin_v1.dependencies import StorageServiceDep
 from fastai.documents.models import Document
 from fastai.documents.schemas import DocumentCreate, DocumentRead, DocumentUpdate
 from fastai.utils.dependencies import SessionDep
+
+logger = structlog.stdlib.get_logger(__name__)
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -32,15 +36,39 @@ async def get_document(session: SessionDep, document_id: uuid.UUID) -> Document:
 
 
 @router.post("", response_model=DocumentRead, status_code=status.HTTP_201_CREATED)
-async def create_document(session: SessionDep, doc_in: DocumentCreate) -> Document:
-    """Create a new document."""
-    existing = await Document.get_by_storage_path(session, doc_in.storage_path)
-    if existing is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="A document with this storage path already exists",
-        )
-    return await Document.create(session, doc_in)
+async def create_document(
+    session: SessionDep,
+    storage: StorageServiceDep,
+    file: UploadFile,
+    filename: str | None = Form(None),
+) -> Document:
+    """Upload a file to storage and create a document record."""
+    resolved_filename = filename or file.filename or "unnamed"
+    content_type = file.content_type or "application/octet-stream"
+    data = await file.read()
+    file_size = len(data)
+    storage_path = f"documents/{uuid.uuid4()}/{resolved_filename}"
+
+    etag = await storage.upload_bytes(data, storage_path, content_type=content_type)
+
+    doc_in = DocumentCreate(
+        filename=resolved_filename,
+        content_type=content_type,
+        file_size=file_size,
+        storage_path=storage_path,
+        content_hash=etag,
+    )
+    try:
+        return await Document.create(session, doc_in)
+    except Exception:
+        try:
+            await storage.delete_object(storage_path)
+        except Exception:
+            logger.warning(
+                "Failed to clean up S3 object after DB error",
+                storage_path=storage_path,
+            )
+        raise
 
 
 @router.patch("/{document_id}", response_model=DocumentRead)
@@ -69,12 +97,24 @@ async def update_document(
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_document(session: SessionDep, document_id: uuid.UUID) -> None:
-    """Delete a document."""
+async def delete_document(
+    session: SessionDep,
+    storage: StorageServiceDep,
+    document_id: uuid.UUID,
+) -> None:
+    """Delete a document and its stored file."""
     doc = await Document.get(session, document_id)
     if doc is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found",
         )
+    storage_path = doc.storage_path
     await doc.delete(session)
+    try:
+        await storage.delete_object(storage_path)
+    except Exception:
+        logger.warning(
+            "Failed to delete S3 object after DB deletion",
+            storage_path=storage_path,
+        )

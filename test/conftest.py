@@ -1,9 +1,13 @@
 import hashlib
+import os
+import uuid as _uuid
 from collections.abc import Sequence
 from typing import AsyncGenerator, Generator, Literal
 
 import pytest
 import pytest_asyncio
+from botocore.exceptions import ClientError
+from pydantic import SecretStr
 from pydantic_ai import Agent, models
 from pydantic_ai.embeddings import Embedder, EmbeddingModel, EmbeddingResult
 from pydantic_ai.embeddings.settings import EmbeddingSettings as PAIEmbeddingSettings
@@ -23,6 +27,7 @@ from fastai.database.core import (
 )
 from fastai.embeddings.core import KnowledgeBase
 from fastai.embeddings.settings import EmbeddingSettings
+from fastai.storage.core import StorageService, StorageSettings
 from fastai.users import User, UserCreate
 
 _TEST_EMBEDDING_DIM = EmbeddingSettings().dimensions
@@ -162,3 +167,34 @@ def test_agent(agent_settings: AgentSettings) -> Generator[Agent[AgentDeps, str]
     agent = create_agent(agent_settings)
     with agent.override(model=TestModel()):
         yield agent
+
+
+# ── Storage fixtures ──
+
+
+@pytest.fixture
+def storage_settings() -> StorageSettings:
+    endpoint_url = os.environ.get(
+        "FASTAI_STORAGE_ENDPOINT_URL", "http://localhost:9000"
+    )
+    test_bucket = f"test-{_uuid.uuid4().hex[:8]}"
+    return StorageSettings(
+        bucket=test_bucket,
+        endpoint_url=endpoint_url,
+        access_key=SecretStr("admin"),
+        secret_key=SecretStr("password"),
+    )
+
+
+@pytest_asyncio.fixture
+async def storage(storage_settings: StorageSettings):
+    async with StorageService(storage_settings) as service:
+        bucket = service.bucket
+        await bucket.create()
+        yield service
+        try:
+            async for obj in bucket.objects.all():
+                await obj.delete()
+            await bucket.delete()
+        except ClientError:
+            pass

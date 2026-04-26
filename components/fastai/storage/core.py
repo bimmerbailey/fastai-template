@@ -22,7 +22,7 @@ class StorageSettings(FastAISettings):
     """
 
     model_config = SettingsConfigDict(env_prefix="FASTAI_STORAGE_")
-    
+
     # NOTE no "endpoint_url" when running in aws
     endpoint_url: str | None = None
     access_key: SecretStr
@@ -101,26 +101,38 @@ class StorageService:
         fileobj: IO[bytes],
         key: str,
         content_type: str = "application/octet-stream",
-    ) -> None:
-        """Upload a file-like object to S3."""
+    ) -> str:
+        """Upload a file-like object to S3.
+
+        Returns the ETag of the uploaded object (quotes stripped).
+        """
         b = self.bucket
         await b.upload_fileobj(
             Fileobj=fileobj,
             Key=key,
             ExtraArgs={"ContentType": content_type},
         )
-        logger.info("Uploaded object", bucket=b.name, key=key)
+        obj = await b.Object(key)
+        await obj.load()
+        etag: str = (await obj.e_tag).strip('"')
+        logger.info("Uploaded object", bucket=b.name, key=key, etag=etag)
+        return etag
 
     async def upload_bytes(
         self,
         data: bytes,
         key: str,
         content_type: str = "application/octet-stream",
-    ) -> None:
-        """Upload raw bytes to S3."""
+    ) -> str:
+        """Upload raw bytes to S3.
+
+        Returns the ETag of the uploaded object (quotes stripped).
+        """
         b = self.bucket
         obj = await b.put_object(Key=key, Body=data, ContentType=content_type)
-        logger.info("Uploaded object", bucket=b.name, key=obj.key)
+        etag: str = (await obj.e_tag).strip('"')
+        logger.info("Uploaded object", bucket=b.name, key=obj.key, etag=etag)
+        return etag
 
     async def download_fileobj(
         self,

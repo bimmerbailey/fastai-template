@@ -1,43 +1,10 @@
 import io
-import uuid
-import os
 
 import pytest
-import pytest_asyncio
-from botocore.exceptions import ClientError
-from pydantic import SecretStr
 
 from fastai.storage.core import StorageService, StorageSettings
 
 pytestmark = pytest.mark.integration
-
-
-@pytest.fixture
-def storage_settings() -> StorageSettings:
-    endpoint_url = os.environ.get(
-        "FASTAI_STORAGE_ENDPOINT_URL", "http://localhost:9000"
-    )
-    test_bucket = f"test-{uuid.uuid4().hex[:8]}"
-    return StorageSettings(
-        bucket=test_bucket,
-        endpoint_url=endpoint_url,
-        access_key=SecretStr("admin"),
-        secret_key=SecretStr("password"),
-    )
-
-
-@pytest_asyncio.fixture
-async def storage(storage_settings: StorageSettings):
-    async with StorageService(storage_settings) as service:
-        bucket = service.bucket
-        await bucket.create()
-        yield service
-        try:
-            async for obj in bucket.objects.all():
-                await obj.delete()
-            await bucket.delete()
-        except ClientError:
-            pass
 
 
 @pytest.mark.asyncio
