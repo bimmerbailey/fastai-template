@@ -12,6 +12,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from fastai.auth import RefreshToken, UserOAuthAccount
 from fastai.chats.models import Conversation, Message
 from fastai.database.core import create_db_engine, destroy_engine
+from fastai.storage.core import StorageSettings
 from fastai.embeddings.core import KnowledgeBase
 from fastai.embeddings.models import Embedding
 from fastai.embeddings.providers import create_embedder
@@ -20,6 +21,7 @@ from fastai.items.models import Item
 from fastai.items.schemas import ItemCreate
 from fastai.users.models import User
 from fastai.users.schemas import UserCreate
+from fastai.documents.models import Document
 
 fake = Faker()
 
@@ -176,6 +178,19 @@ async def create_embeddings(session: AsyncSession, items: list[Item]) -> None:
         print(f"  Embedded item: {item.name}")
 
 
+async def ensure_bucket() -> None:
+    """Create the S3 storage bucket if it doesn't already exist."""
+    settings = StorageSettings()
+    async with settings.create_resource() as resource:
+        bucket = await resource.Bucket(settings.bucket)
+        try:
+            await bucket.meta.client.head_bucket(Bucket=settings.bucket)
+            print(f"Bucket '{settings.bucket}' already exists.")
+        except Exception:
+            await resource.create_bucket(Bucket=settings.bucket)
+            print(f"Created bucket '{settings.bucket}'.")
+
+
 def run_migrations() -> None:
     """Run alembic migrations (upgrade head)."""
     root = Path(__file__).resolve().parent.parent
@@ -189,6 +204,9 @@ async def seed_database(
 ) -> None:
     """Run the full database seed."""
     await to_thread.run_sync(run_migrations)
+
+    print("Ensuring storage bucket exists...")
+    await ensure_bucket()
 
     print("Creating users...")
     await create_users(session)
@@ -212,6 +230,7 @@ async def drop_tables(session: AsyncSession) -> None:
         RefreshToken,
         UserOAuthAccount,
         User,
+        Document
     ]:
         await session.exec(delete(table))
         await session.commit()
@@ -220,7 +239,10 @@ async def drop_tables(session: AsyncSession) -> None:
 async def _main(should_create_embeddings: bool = False) -> None:
     engine = create_db_engine()
     async with AsyncSession(engine) as session:
-        await drop_tables(session)
+        try:
+            await drop_tables(session)
+        except Exception:
+            await session.rollback()
         await seed_database(session, should_create_embeddings)
     await destroy_engine(engine)
 

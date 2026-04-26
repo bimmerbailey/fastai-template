@@ -12,6 +12,7 @@ from fastai.chats.models import Conversation, Message  # noqa: F401
 
 # Override URL from app settings so config isn't duplicated
 from fastai.database.core import PostgresSettings
+from fastai.documents.models import Document  # noqa: F401
 
 # Import ALL table models to populate SQLModel.metadata
 from fastai.embeddings.models import Embedding  # noqa: F401
