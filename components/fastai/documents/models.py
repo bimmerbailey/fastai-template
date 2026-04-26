@@ -17,6 +17,7 @@ class Document(DocumentBase, TimestampMixin, table=True):
         CheckConstraint("file_size >= 0", name="ck_documents_file_size_nonneg"),
         UniqueConstraint("storage_path", name="uq_documents_storage_path"),
         Index("ix_documents_content_hash", "content_hash"),
+        Index("ix_documents_embedding_status", "embedding_status"),
     )
 
     id: _uuid.UUID = Field(default_factory=_uuid.uuid4, primary_key=True)
@@ -25,6 +26,10 @@ class Document(DocumentBase, TimestampMixin, table=True):
     file_size: int = Field(default=0)
     storage_path: str = Field(sa_column=Column(String, nullable=False, unique=True))
     content_hash: str = Field(sa_column=Column(String, nullable=False))
+    embedding_status: str = Field(
+        default="pending",
+        sa_column=Column(String, nullable=False, server_default="pending"),
+    )
 
     @classmethod
     async def create(cls, session: AsyncSession, doc_in: DocumentCreate) -> "Document":
@@ -69,6 +74,37 @@ class Document(DocumentBase, TimestampMixin, table=True):
         """Delete this document from the database."""
         await session.delete(self)
         await session.commit()
+
+    async def update_embedding_status(
+        self, session: AsyncSession, status: str
+    ) -> "Document":
+        """Update only the embedding_status field."""
+        self.embedding_status = status
+        session.add(self)
+        await session.commit()
+        await session.refresh(self)
+        return self
+
+    @classmethod
+    async def get_all_by_embedding_status(
+        cls,
+        session: AsyncSession,
+        embedding_status: str,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> "list[Document]":
+        """Get documents filtered by embedding_status."""
+        statement = (
+            select(cls)
+            .where(
+                cls.embedding_status == embedding_status  # pyright: ignore[reportAttributeAccessIssue]
+            )
+            .order_by(cls.created_at.desc())  # pyright: ignore[reportAttributeAccessIssue]
+            .offset(offset)
+            .limit(limit)
+        )
+        results = await session.exec(statement)
+        return list(results.all())
 
     @classmethod
     async def get_by_storage_path(
