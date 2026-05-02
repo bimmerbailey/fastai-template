@@ -6,7 +6,6 @@ Create Date: 2026-04-06 06:44:22.598699
 
 """
 
-import os
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -14,15 +13,15 @@ from alembic import op
 from pgvector.sqlalchemy import HALFVEC
 from sqlalchemy.dialects import postgresql
 
+from fastai.embeddings.settings import EmbeddingSettings
+
 # revision identifiers, used by Alembic.
 revision: str = "4fd50ef2630a"
 down_revision: Union[str, Sequence[str], None] = "f14b01c3e80c"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-# Read embedding dimensions from the environment so the migration
-# adapts to whatever model the deployer has configured.
-_EMBEDDING_DIM = int(os.environ.get("FASTAI_EMBEDDING_DIMENSIONS", "1536"))
+_EMBEDDING_DIM = EmbeddingSettings().dimensions
 
 
 def upgrade() -> None:
