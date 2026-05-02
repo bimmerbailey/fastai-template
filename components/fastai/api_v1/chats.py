@@ -62,7 +62,9 @@ async def chat(
     conversation: Conversation
     needs_title: bool
     if chat_request.conversation_id is not None:
-        conv = await Conversation.get(session, chat_request.conversation_id)
+        conv = await Conversation.get(
+            session, chat_request.conversation_id, user_id=user.id  # pyright: ignore[reportCallIssue]
+        )
         if conv is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -83,7 +85,7 @@ async def chat(
 
     # ── Build message history from persisted messages ──
     existing_messages = await Message.get_by_conversation(
-        session, conversation_id=conversation_id
+        session, conversation_id=conversation_id, user_id=user.id  # pyright: ignore[reportCallIssue]
     )
     message_history = messages_to_history(existing_messages)
 
@@ -127,7 +129,7 @@ async def chat(
     # ── Auto-title on first message ──
     if needs_title:
         # Re-fetch the conversation since prior commits expired the object
-        conversation = await Conversation.get(session, conversation_id)  # pyright: ignore[reportAssignmentType]
+        conversation = await Conversation.get(session, conversation_id, user_id=user.id)  # pyright: ignore[reportCallIssue, reportAssignmentType]
         await conversation.update(
             session,
             ConversationUpdate(title=_auto_title(chat_request.message)),

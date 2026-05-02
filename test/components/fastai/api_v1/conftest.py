@@ -68,6 +68,21 @@ async def authenticated_client(
 
 
 @pytest_asyncio.fixture
+async def second_authenticated_client(
+    app: FastAPI, create_user
+) -> AsyncGenerator[AsyncClient, None]:
+    """A second authenticated client (different user) for isolation tests."""
+    user = await create_user(
+        email="user2@example.com", password="securepassword123", admin=False
+    )
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        await _login_client(client, user.email, "securepassword123")
+        yield client
+
+
+@pytest_asyncio.fixture
 async def admin_client(
     api_v1_client: AsyncClient, create_user, test_db_session
 ) -> AsyncGenerator[AsyncClient, None]:

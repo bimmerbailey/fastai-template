@@ -35,14 +35,20 @@ async def sample_user(test_db_session: AsyncSession, hasher: PasswordService) ->
     return await User.create(test_db_session, user_in, hasher=hasher)
 
 
+@pytest.fixture
+def sample_user_id(sample_user: User) -> uuid.UUID:
+    """Eagerly capture user ID before subsequent fixture commits expire it."""
+    assert sample_user.id is not None
+    return sample_user.id
+
+
 @pytest_asyncio.fixture
 async def sample_conversation(
-    test_db_session: AsyncSession, sample_user: User
+    test_db_session: AsyncSession, sample_user_id: uuid.UUID
 ) -> Conversation:
     """Create a sample conversation for tests that need an existing record."""
-    assert sample_user.id is not None
     conv_in = ConversationCreate(
-        user_id=sample_user.id,
+        user_id=sample_user_id,
         title="Test Conversation",
     )
     return await Conversation.create(test_db_session, conv_in)
@@ -100,10 +106,14 @@ async def test_create_conversation_no_title(
 
 @pytest.mark.asyncio
 async def test_get_conversation(
-    test_db_session: AsyncSession, sample_conversation: Conversation
+    test_db_session: AsyncSession,
+    sample_conversation: Conversation,
+    sample_user_id: uuid.UUID,
 ) -> None:
     assert sample_conversation.id is not None
-    fetched = await Conversation.get(test_db_session, sample_conversation.id)
+    fetched = await Conversation.get(
+        test_db_session, sample_conversation.id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+    )
 
     assert fetched is not None
     assert fetched.id == sample_conversation.id
@@ -112,8 +122,36 @@ async def test_get_conversation(
 
 @pytest.mark.asyncio
 async def test_get_conversation_not_found(test_db_session: AsyncSession) -> None:
-    fetched = await Conversation.get(test_db_session, uuid.uuid4())
+    fetched = await Conversation.get(
+        test_db_session, uuid.uuid4(), user_id=uuid.uuid4()  # pyright: ignore[reportCallIssue]
+    )
 
+    assert fetched is None
+
+
+@pytest.mark.asyncio
+async def test_get_conversation_wrong_user_returns_none(
+    test_db_session: AsyncSession,
+    sample_conversation: Conversation,
+    hasher: PasswordService,
+) -> None:
+    """Conversation.get() returns None when user_id doesn't match."""
+    assert sample_conversation.id is not None
+    conv_id = sample_conversation.id
+    other_user = await User.create(
+        test_db_session,
+        UserCreate(
+            first_name="Other",
+            last_name="User",
+            email="other@example.com",
+            password="password123",
+        ),
+        hasher=hasher,
+    )
+    assert other_user.id is not None
+    fetched = await Conversation.get(
+        test_db_session, conv_id, user_id=other_user.id  # pyright: ignore[reportCallIssue]
+    )
     assert fetched is None
 
 
@@ -184,14 +222,18 @@ async def test_update_conversation(
 
 @pytest.mark.asyncio
 async def test_delete_conversation(
-    test_db_session: AsyncSession, sample_conversation: Conversation
+    test_db_session: AsyncSession,
+    sample_conversation: Conversation,
+    sample_user_id: uuid.UUID,
 ) -> None:
     assert sample_conversation.id is not None
     conv_id = sample_conversation.id
 
     await sample_conversation.delete(test_db_session)
 
-    fetched = await Conversation.get(test_db_session, conv_id)
+    fetched = await Conversation.get(
+        test_db_session, conv_id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+    )
     assert fetched is None
 
 
@@ -199,6 +241,7 @@ async def test_delete_conversation(
 async def test_delete_conversation_cascades_messages(
     test_db_session: AsyncSession,
     sample_conversation: Conversation,
+    sample_user_id: uuid.UUID,
 ) -> None:
     assert sample_conversation.id is not None
     conv_id = sample_conversation.id
@@ -216,7 +259,9 @@ async def test_delete_conversation_cascades_messages(
 
     await sample_conversation.delete(test_db_session)
 
-    fetched_msg = await Message.get(test_db_session, msg_id)
+    fetched_msg = await Message.get(
+        test_db_session, msg_id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+    )
     assert fetched_msg is None
 
 
@@ -263,10 +308,14 @@ async def test_create_message_assistant_role(
 
 @pytest.mark.asyncio
 async def test_get_message(
-    test_db_session: AsyncSession, sample_message: Message
+    test_db_session: AsyncSession,
+    sample_message: Message,
+    sample_user_id: uuid.UUID,
 ) -> None:
     assert sample_message.id is not None
-    fetched = await Message.get(test_db_session, sample_message.id)
+    fetched = await Message.get(
+        test_db_session, sample_message.id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+    )
 
     assert fetched is not None
     assert fetched.id == sample_message.id
@@ -275,14 +324,44 @@ async def test_get_message(
 
 @pytest.mark.asyncio
 async def test_get_message_not_found(test_db_session: AsyncSession) -> None:
-    fetched = await Message.get(test_db_session, uuid.uuid4())
+    fetched = await Message.get(
+        test_db_session, uuid.uuid4(), user_id=uuid.uuid4()  # pyright: ignore[reportCallIssue]
+    )
 
     assert fetched is None
 
 
 @pytest.mark.asyncio
+async def test_get_message_wrong_user_returns_none(
+    test_db_session: AsyncSession,
+    sample_message: Message,
+    hasher: PasswordService,
+) -> None:
+    """Message.get() returns None when user_id doesn't match the conversation owner."""
+    assert sample_message.id is not None
+    msg_id = sample_message.id
+    other_user = await User.create(
+        test_db_session,
+        UserCreate(
+            first_name="Other",
+            last_name="User",
+            email="other@example.com",
+            password="password123",
+        ),
+        hasher=hasher,
+    )
+    assert other_user.id is not None
+    fetched = await Message.get(
+        test_db_session, msg_id, user_id=other_user.id  # pyright: ignore[reportCallIssue]
+    )
+    assert fetched is None
+
+
+@pytest.mark.asyncio
 async def test_get_by_conversation(
-    test_db_session: AsyncSession, sample_conversation: Conversation
+    test_db_session: AsyncSession,
+    sample_conversation: Conversation,
+    sample_user_id: uuid.UUID,
 ) -> None:
     assert sample_conversation.id is not None
     conv_id = sample_conversation.id
@@ -306,7 +385,9 @@ async def test_get_by_conversation(
         ),
     )
 
-    messages = await Message.get_by_conversation(test_db_session, conv_id)
+    messages = await Message.get_by_conversation(
+        test_db_session, conv_id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+    )
 
     assert len(messages) == 3
     assert messages[0].content_text == "First"
@@ -316,7 +397,9 @@ async def test_get_by_conversation(
 
 @pytest.mark.asyncio
 async def test_get_by_conversation_pagination(
-    test_db_session: AsyncSession, sample_conversation: Conversation
+    test_db_session: AsyncSession,
+    sample_conversation: Conversation,
+    sample_user_id: uuid.UUID,
 ) -> None:
     assert sample_conversation.id is not None
     conv_id = sample_conversation.id
@@ -332,7 +415,7 @@ async def test_get_by_conversation_pagination(
         )
 
     page = await Message.get_by_conversation(
-        test_db_session, conv_id, offset=2, limit=2
+        test_db_session, conv_id, user_id=sample_user_id, offset=2, limit=2  # pyright: ignore[reportCallIssue]
     )
 
     assert len(page) == 2
@@ -340,7 +423,9 @@ async def test_get_by_conversation_pagination(
 
 @pytest.mark.asyncio
 async def test_get_by_conversation_ordered_by_created_at(
-    test_db_session: AsyncSession, sample_conversation: Conversation
+    test_db_session: AsyncSession,
+    sample_conversation: Conversation,
+    sample_user_id: uuid.UUID,
 ) -> None:
     assert sample_conversation.id is not None
     conv_id = sample_conversation.id
@@ -358,7 +443,9 @@ async def test_get_by_conversation_ordered_by_created_at(
         ),
     )
 
-    messages = await Message.get_by_conversation(test_db_session, conv_id)
+    messages = await Message.get_by_conversation(
+        test_db_session, conv_id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+    )
 
     assert messages[0].id == first.id
     assert messages[1].id == second.id
@@ -366,12 +453,16 @@ async def test_get_by_conversation_ordered_by_created_at(
 
 @pytest.mark.asyncio
 async def test_delete_message(
-    test_db_session: AsyncSession, sample_message: Message
+    test_db_session: AsyncSession,
+    sample_message: Message,
+    sample_user_id: uuid.UUID,
 ) -> None:
     assert sample_message.id is not None
     msg_id = sample_message.id
 
     await sample_message.delete(test_db_session)
 
-    fetched = await Message.get(test_db_session, msg_id)
+    fetched = await Message.get(
+        test_db_session, msg_id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+    )
     assert fetched is None

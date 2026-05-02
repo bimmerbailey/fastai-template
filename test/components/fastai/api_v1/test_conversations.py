@@ -121,11 +121,10 @@ async def test_get_conversation_not_found(authenticated_client: AsyncClient) -> 
 async def test_list_conversations(
     authenticated_client: AsyncClient,
 ) -> None:
-    conv_a = await _create_conversation(authenticated_client, title="Conv A")
+    await _create_conversation(authenticated_client, title="Conv A")
     await _create_conversation(authenticated_client, title="Conv B")
-    user_id = conv_a["user_id"]
 
-    res = await authenticated_client.get(BASE_URL, params={"user_id": user_id})
+    res = await authenticated_client.get(BASE_URL)
 
     assert res.status_code == 200
     titles = {c["title"] for c in res.json()}
@@ -134,25 +133,14 @@ async def test_list_conversations(
 
 
 @pytest.mark.asyncio
-async def test_list_conversations_requires_user_id(
-    authenticated_client: AsyncClient,
-) -> None:
-    """user_id is a required query param — omitting it returns 422."""
-    res = await authenticated_client.get(BASE_URL)
-    assert res.status_code == 422
-
-
-@pytest.mark.asyncio
 async def test_list_conversations_pagination(
     authenticated_client: AsyncClient,
 ) -> None:
-    conv = await _create_conversation(authenticated_client, title="Page Conv 0")
-    user_id = conv["user_id"]
-    for i in range(1, 5):
+    for i in range(5):
         await _create_conversation(authenticated_client, title=f"Page Conv {i}")
 
     res = await authenticated_client.get(
-        BASE_URL, params={"user_id": user_id, "offset": 0, "limit": 2}
+        BASE_URL, params={"offset": 0, "limit": 2}
     )
 
     assert res.status_code == 200
@@ -220,11 +208,10 @@ async def test_deleted_conversation_excluded_from_list(
 ) -> None:
     created = await _create_conversation(authenticated_client, title="Delete Me")
     conv_id = created["id"]
-    user_id = created["user_id"]
 
     await authenticated_client.delete(f"{BASE_URL}/{conv_id}")
 
-    list_res = await authenticated_client.get(BASE_URL, params={"user_id": user_id})
+    list_res = await authenticated_client.get(BASE_URL)
     ids = [c["id"] for c in list_res.json()]
     assert conv_id not in ids
 
@@ -453,3 +440,133 @@ async def test_deleted_message_excluded_from_list(
     list_res = await authenticated_client.get(_messages_url(conv_id))
     ids = [m["id"] for m in list_res.json()]
     assert msg_id not in ids
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Cross-user isolation
+# ═══════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.asyncio
+async def test_get_conversation_other_user_404(
+    authenticated_client: AsyncClient,
+    second_authenticated_client: AsyncClient,
+) -> None:
+    """A user cannot read another user's conversation."""
+    created = await _create_conversation(authenticated_client)
+    res = await second_authenticated_client.get(f"{BASE_URL}/{created['id']}")
+    assert res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_update_conversation_other_user_404(
+    authenticated_client: AsyncClient,
+    second_authenticated_client: AsyncClient,
+) -> None:
+    """A user cannot update another user's conversation."""
+    created = await _create_conversation(authenticated_client)
+    res = await second_authenticated_client.patch(
+        f"{BASE_URL}/{created['id']}", json={"title": "Hacked"}
+    )
+    assert res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_conversation_other_user_404(
+    authenticated_client: AsyncClient,
+    second_authenticated_client: AsyncClient,
+) -> None:
+    """A user cannot delete another user's conversation."""
+    created = await _create_conversation(authenticated_client)
+    res = await second_authenticated_client.delete(f"{BASE_URL}/{created['id']}")
+    assert res.status_code == 404
+
+    # Original should still exist
+    get_res = await authenticated_client.get(f"{BASE_URL}/{created['id']}")
+    assert get_res.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_list_messages_other_user_404(
+    authenticated_client: AsyncClient,
+    second_authenticated_client: AsyncClient,
+) -> None:
+    """A user cannot list messages from another user's conversation."""
+    conv = await _create_conversation(authenticated_client)
+    await _create_message(authenticated_client, conv["id"])
+
+    res = await second_authenticated_client.get(_messages_url(conv["id"]))
+    assert res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_message_other_user_404(
+    authenticated_client: AsyncClient,
+    second_authenticated_client: AsyncClient,
+) -> None:
+    """A user cannot read a message from another user's conversation."""
+    conv = await _create_conversation(authenticated_client)
+    msg = await _create_message(authenticated_client, conv["id"])
+
+    res = await second_authenticated_client.get(
+        f"{_messages_url(conv['id'])}/{msg['id']}"
+    )
+    assert res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_create_message_other_user_404(
+    authenticated_client: AsyncClient,
+    second_authenticated_client: AsyncClient,
+) -> None:
+    """A user cannot create a message in another user's conversation."""
+    conv = await _create_conversation(authenticated_client)
+    payload = _make_message_payload(conversation_id=conv["id"])
+
+    res = await second_authenticated_client.post(
+        _messages_url(conv["id"]), json=payload
+    )
+    assert res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_message_other_user_404(
+    authenticated_client: AsyncClient,
+    second_authenticated_client: AsyncClient,
+) -> None:
+    """A user cannot delete a message from another user's conversation."""
+    conv = await _create_conversation(authenticated_client)
+    msg = await _create_message(authenticated_client, conv["id"])
+
+    res = await second_authenticated_client.delete(
+        f"{_messages_url(conv['id'])}/{msg['id']}"
+    )
+    assert res.status_code == 404
+
+    # Original should still exist
+    get_res = await authenticated_client.get(
+        f"{_messages_url(conv['id'])}/{msg['id']}"
+    )
+    assert get_res.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_list_conversations_scoped_to_user(
+    authenticated_client: AsyncClient,
+    second_authenticated_client: AsyncClient,
+) -> None:
+    """Each user only sees their own conversations."""
+    await _create_conversation(authenticated_client, title="User1 Conv")
+    await _create_conversation(second_authenticated_client, title="User2 Conv")
+
+    res1 = await authenticated_client.get(BASE_URL)
+    assert res1.status_code == 200
+    titles1 = {c["title"] for c in res1.json()}
+    assert "User1 Conv" in titles1
+    assert "User2 Conv" not in titles1
+
+    res2 = await second_authenticated_client.get(BASE_URL)
+    assert res2.status_code == 200
+    titles2 = {c["title"] for c in res2.json()}
+    assert "User2 Conv" in titles2
+    assert "User1 Conv" not in titles2

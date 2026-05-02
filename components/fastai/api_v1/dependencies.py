@@ -12,6 +12,7 @@ from fastai.auth.settings import AuthSettings
 from fastai.auth.token_service import TokenError, TokenService
 from fastai.embeddings.core import KnowledgeBase
 from fastai.users.models import User
+from fastai.users.schemas import AuthenticatedUser
 from fastai.utils.dependencies import SessionDep
 
 security_scheme = OAuth2PasswordBearer(
@@ -57,7 +58,7 @@ async def get_current_user(
     session: SessionDep,
     token_service: TokenService = Depends(get_token_service),
     token: str | None = Depends(security_scheme),
-) -> User:
+) -> AuthenticatedUser:
     """Extract and validate the access token from the Authorization header,
     then return the corresponding user."""
     if not token:
@@ -84,7 +85,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return user
+    return AuthenticatedUser.model_validate(user)
 
 
 async def get_scoped_user(
@@ -92,7 +93,7 @@ async def get_scoped_user(
     session: SessionDep,
     token_service: TokenService = Depends(get_token_service),
     token: str | None = Depends(security_scheme),
-) -> User:
+) -> AuthenticatedUser:
     """Extract and validate the access token, checking OAuth2 scopes.
 
     When used via ``Security(..., scopes=[...])``, the required scopes are
@@ -135,8 +136,7 @@ async def get_scoped_user(
             )
 
     structlog.contextvars.bind_contextvars(actor=user.id)
-    # TODO: Think about returning a plain BaseModel instead of a data model
-    return user
+    return AuthenticatedUser.model_validate(user)
 
 
 AgentDep = Annotated[Agent[AgentDeps, str], Depends(get_agent)]
@@ -144,5 +144,5 @@ AgentSettingsDep = Annotated[AgentSettings, Depends(get_agent_settings)]
 KnowledgeBaseDep = Annotated[KnowledgeBase, Depends(get_knowledge_base)]
 AuthSettingsDep = Annotated[AuthSettings, Depends(get_auth_settings)]
 TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]
-CurrentUserDep = Annotated[User, Security(get_scoped_user)]
-CurrentAdminDep = Annotated[User, Security(get_scoped_user, scopes=["admin"])]
+CurrentUserDep = Annotated[AuthenticatedUser, Security(get_scoped_user)]
+CurrentAdminDep = Annotated[AuthenticatedUser, Security(get_scoped_user, scopes=["admin"])]

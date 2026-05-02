@@ -43,6 +43,17 @@ class UserCreate(UserBase):
         return v
 
 
+class AuthenticatedUser(SQLModel):
+    """Lightweight identity returned by the auth layer.
+
+    Not tied to a database session, so it is safe to use across
+    multiple commits within a single request.
+    """
+
+    id: uuid.UUID
+    is_admin: bool
+
+
 class UserRead(UserBase):
     """Schema for reading a user.
 

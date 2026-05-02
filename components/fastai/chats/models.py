@@ -1,11 +1,12 @@
 import uuid as _uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Self
 
 from pydantic import AwareDatetime
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy import Index
 from sqlalchemy import text as sa_text
 from sqlmodel import Column, DateTime, Field, Relationship, String, Text, func, select
+from sqlmodel.sql._expression_select_cls import SelectOfScalar
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from fastai.chats.schemas import (
@@ -64,6 +65,13 @@ class Conversation(ConversationBase, TimestampMixin, table=True):
         },
     )
 
+    # ── Queries ──
+
+    @classmethod
+    def _user_query(cls, user_id: _uuid.UUID) -> SelectOfScalar[Self]:
+        """Base query always scoped to a user."""
+        return select(cls).where(cls.user_id == user_id)
+
     # ── CRUD ──
 
     @classmethod
@@ -79,10 +87,11 @@ class Conversation(ConversationBase, TimestampMixin, table=True):
 
     @classmethod
     async def get(
-        cls, session: AsyncSession, conv_id: _uuid.UUID
+        cls, session: AsyncSession, conv_id: _uuid.UUID, *, user_id: _uuid.UUID
     ) -> Optional["Conversation"]:
-        """Get a single conversation by ID (without messages)."""
-        return await session.get(cls, conv_id)
+        """Get a single conversation by ID, scoped to the given user."""
+        result = await session.exec(cls._user_query(user_id).where(cls.id == conv_id))
+        return result.first()
 
     @classmethod
     async def get_by_user(
@@ -97,8 +106,7 @@ class Conversation(ConversationBase, TimestampMixin, table=True):
         Does NOT load messages — use Message.get_by_conversation() separately.
         """
         statement = (
-            select(cls)
-            .where(cls.user_id == user_id)
+            cls._user_query(user_id)
             .order_by(cls.created_at.desc())  # pyright: ignore[reportAttributeAccessIssue]
             .offset(offset)
             .limit(limit)
@@ -167,6 +175,13 @@ class Message(MessageBase, table=True):
     # ── Relationships ──
     conversation: Conversation = Relationship(back_populates="messages")
 
+    # ── Queries ──
+
+    @classmethod
+    def _user_query(cls, user_id: _uuid.UUID) -> SelectOfScalar[Self]:
+        """Base query scoped to a user via the parent conversation."""
+        return select(cls).join(Conversation).where(Conversation.user_id == user_id)
+
     # ── CRUD ──
 
     @classmethod
@@ -180,22 +195,25 @@ class Message(MessageBase, table=True):
 
     @classmethod
     async def get(
-        cls, session: AsyncSession, msg_id: _uuid.UUID
+        cls, session: AsyncSession, msg_id: _uuid.UUID, *, user_id: _uuid.UUID
     ) -> Optional["Message"]:
-        """Get a single message by ID."""
-        return await session.get(cls, msg_id)
+        """Get a single message by ID, scoped to the given user."""
+        result = await session.exec(cls._user_query(user_id).where(cls.id == msg_id))
+        return result.first()
 
     @classmethod
     async def get_by_conversation(
         cls,
         session: AsyncSession,
         conversation_id: _uuid.UUID,
+        *,
+        user_id: _uuid.UUID,
         offset: int = 0,
         limit: int = 100,
     ) -> list["Message"]:
-        """Get messages for a conversation, ordered by creation time."""
+        """Get messages for a conversation, scoped to the given user."""
         statement = (
-            select(cls)
+            cls._user_query(user_id)
             .where(cls.conversation_id == conversation_id)
             .order_by(cls.created_at)  # pyright: ignore[reportArgumentType]
             .offset(offset)
