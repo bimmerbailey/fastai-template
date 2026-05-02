@@ -24,6 +24,7 @@ SOFTWARE.
 
 import logging
 import sys
+import types
 from enum import StrEnum
 
 import structlog
@@ -83,13 +84,34 @@ CLI_PROCESSORS: list[Processor] = [
     structlog.processors.UnicodeDecoder(),
 ]
 
+# Worker-specific processors for FastStream worker applications
+WORKER_PROCESSORS: list[Processor] = [
+    structlog.contextvars.merge_contextvars,
+    structlog.stdlib.ExtraAdder(),
+]
+
 # Combined processor lists for convenience
 SHARED_PROCESSORS: list[Processor] = BASE_PROCESSORS + API_PROCESSORS
 
 
-def setup_api_logging(settings: LogSettings = LogSettings()):
+def _setup_structured_logging(
+    processors: list[Processor],
+    loggers_to_redirect: list[str],
+    settings: LogSettings,
+) -> None:
+    """Shared structured logging setup for API and Worker applications.
+
+    Configures structlog with a ProcessorFormatter so that both structlog
+    and stdlib log records are formatted consistently.
+
+    Args:
+        processors: The structlog processor chain to use.
+        loggers_to_redirect: stdlib logger names whose handlers should be
+            cleared so messages flow through structlog instead.
+        settings: LogSettings instance with logging configuration.
+    """
     log_renderer: structlog.types.Processor = structlog.dev.ConsoleRenderer()
-    base_processors = SHARED_PROCESSORS.copy()
+    base_processors = processors.copy()
     if settings.json_format:
         base_processors.append(structlog.processors.format_exc_info)
         log_renderer = structlog.processors.JSONRenderer()
@@ -97,7 +119,6 @@ def setup_api_logging(settings: LogSettings = LogSettings()):
     structlog.configure(
         processors=base_processors
         + [
-            # Prepare event dict for `ProcessorFormatter`.
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
         logger_factory=structlog.stdlib.LoggerFactory(),
@@ -105,38 +126,28 @@ def setup_api_logging(settings: LogSettings = LogSettings()):
     )
 
     formatter = structlog.stdlib.ProcessorFormatter(
-        # These run ONLY on `logging` entries that do NOT originate within
-        # structlog.
         foreign_pre_chain=base_processors,
-        # These run on ALL entries after the pre_chain is done.
         processors=[
-            # Remove _record & _from_structlog.
             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
             log_renderer,
         ],
     )
 
-    # TODO: FileHandler
     handler = logging.StreamHandler()
-    # Use OUR `ProcessorFormatter` to format all `logging` entries.
     handler.setFormatter(formatter)
     root_logger = logging.getLogger()
     root_logger.addHandler(handler)
     root_logger.setLevel(settings.level)
 
-    for _log in ["uvicorn", "uvicorn.error"]:
-        # Clear the log handlers for uvicorn loggers, and enable propagation
-        # so the messages are caught by our root logger and formatted correctly
-        # by structlog
+    for _log in loggers_to_redirect:
         logging.getLogger(_log).handlers.clear()
         logging.getLogger(_log).propagate = True
 
-    def handle_exception(exc_type, exc_value, exc_traceback):
-        """
-        Log any uncaught exception instead of letting it be printed by Python
-        (but leave KeyboardInterrupt untouched to allow users to Ctrl+C to stop)
-        See https://stackoverflow.com/a/16993115/3641865
-        """
+    def handle_exception(
+        exc_type: type[BaseException],
+        exc_value: BaseException,
+        exc_traceback: types.TracebackType | None,
+    ) -> None:
         if issubclass(exc_type, KeyboardInterrupt):
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
             return
@@ -146,6 +157,14 @@ def setup_api_logging(settings: LogSettings = LogSettings()):
         )
 
     sys.excepthook = handle_exception
+
+
+def setup_api_logging(settings: LogSettings = LogSettings()) -> None:
+    _setup_structured_logging(
+        processors=SHARED_PROCESSORS,
+        loggers_to_redirect=["uvicorn", "uvicorn.error"],
+        settings=settings,
+    )
 
 
 def setup_cli_logging(settings: LogSettings = LogSettings()):
@@ -175,6 +194,23 @@ def setup_cli_logging(settings: LogSettings = LogSettings()):
 
     # Configure standard logging level
     logging.basicConfig(level=settings.level)
+
+
+def setup_worker_logging(settings: LogSettings | None = None) -> None:
+    """Configure structured logging for FastStream worker applications.
+
+    Uses the same ProcessorFormatter approach as setup_api_logging() so that
+    stdlib log records emitted by FastStream are formatted through structlog.
+
+    Args:
+        settings: LogSettings instance with logging configuration.
+    """
+    settings = settings or LogSettings()
+    _setup_structured_logging(
+        processors=BASE_PROCESSORS + WORKER_PROCESSORS,
+        loggers_to_redirect=["faststream"],
+        settings=settings,
+    )
 
 
 def build_processors(

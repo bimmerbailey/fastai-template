@@ -44,11 +44,11 @@ help:
 
 # Package management
 install:
-	uv sync --all-groups --all-extras
+	uv sync --all-groups --all-extras --all-packages
 
 # Development environment
 dev:
-	docker compose up api frontend
+	docker compose up api frontend worker
 
 down:
 	docker compose down

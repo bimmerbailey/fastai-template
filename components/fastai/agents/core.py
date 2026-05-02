@@ -15,21 +15,22 @@ from fastai.agents.dependencies import AgentDeps
 from fastai.agents.settings import AgentSettings
 from fastai.chats.models import Message
 from fastai.chats.schemas import MessageRole
-from fastai.items import Item
 
 logger = structlog.stdlib.get_logger(__name__)
 
 
 INSTRUCTIONS = """\
-You are a helpful AI assistant. You can answer general questions and help \
-users look up items in the inventory database.
+You are a helpful AI assistant with access to a knowledge base of documents.
 
-When users ask about items, you have two search tools:
-- search_items: for exact or partial name matches
-- semantic_search: for conceptual or descriptive queries
+You MUST use the search_documents tool to answer questions about uploaded \
+documents, files, or any domain-specific knowledge. Do not guess or \
+hallucinate answers — always search first.
 
-Be concise, accurate, and helpful. Use the available tools to look up \
-real data rather than guessing.\
+When a user asks a question that could be answered by their documents, \
+search for relevant content before responding. If no results are found, \
+let the user know.
+
+Be concise, accurate, and helpful.\
 """
 
 
@@ -70,68 +71,33 @@ def _register_tools(agent: Agent[AgentDeps, str]) -> None:
         return now.isoformat()
 
     @agent.tool
-    async def search_items(
+    async def search_documents(
         ctx: RunContext[AgentDeps],
         query: str,
     ) -> str:
-        """Search for items in the inventory database.
-
-        Args:
-            query: A search term to find matching items by name.
-        """
-
-        async with AsyncSession(ctx.deps.engine) as session:
-            items = await Item.search_by_name(session, query)
-
-        if not items:
-            return f"No items found matching '{query}'."
-
-        lines = [f"Found {len(items)} item(s):"]
-        for item in items:
-            cost_str = f"${item.cost}" if item.cost is not None else "N/A"
-            lines.append(f"- {item.name} (qty: {item.quantity}, cost: {cost_str})")
-        return "\n".join(lines)
-
-    @agent.tool
-    async def get_item_count(ctx: RunContext[AgentDeps]) -> str:
-        """Get the total number of items in the inventory."""
-
-        async with AsyncSession(ctx.deps.engine) as session:
-            count = await Item.count(session)
-
-        return f"There are {count} items in the inventory."
-
-    @agent.tool
-    async def semantic_search(
-        ctx: RunContext[AgentDeps],
-        query: str,
-        source_type: str | None = None,
-    ) -> str:
-        """Search for items using semantic similarity. Use this when the
-        user's query is conceptual or descriptive rather than an exact name
-        match (e.g. "something to keep warm" or "affordable electronics").
+        """Search uploaded documents for relevant information. Use this tool
+        whenever the user asks a question that could be answered by their
+        documents or files. Always search before answering domain-specific
+        questions.
 
         Args:
             query: A natural language description of what to search for.
-            source_type: Optional filter by source type (e.g. "item").
-                Defaults to searching all source types.
         """
         async with AsyncSession(ctx.deps.engine) as session:
             results = await ctx.deps.knowledge_base.search(
                 session,
                 query=query,
-                source_type=source_type,
+                source_type="document",
                 limit=5,
             )
 
         if not results:
-            return f"No semantically similar results found for '{query}'."
+            return f"No relevant documents found for '{query}'."
 
-        lines = [f"Found {len(results)} similar result(s):"]
+        lines = [f"Found {len(results)} relevant passage(s):"]
         for r in results:
             lines.append(
-                f"- [{r.source_type}:{r.source_id}] "
-                f"{r.chunk_text[:200]} (similarity: {r.score:.2f})"
+                f"- {r.chunk_text[:300]} (relevance: {r.score:.2f})"
             )
         return "\n".join(lines)
 

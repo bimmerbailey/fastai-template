@@ -3,9 +3,11 @@ import uuid
 import structlog.stdlib
 from fastapi import APIRouter, Form, HTTPException, Query, UploadFile, status
 
-from fastai.admin_v1.dependencies import StorageServiceDep
+from fastai.admin_v1.dependencies import EventPublisherDep, StorageServiceDep
 from fastai.documents.models import Document
 from fastai.documents.schemas import DocumentCreate, DocumentRead, DocumentUpdate
+from fastai.embeddings.models import Embedding
+from fastai.events.schemas import DocumentUploaded
 from fastai.utils.dependencies import SessionDep
 
 logger = structlog.stdlib.get_logger(__name__)
@@ -13,13 +15,19 @@ logger = structlog.stdlib.get_logger(__name__)
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
 
+# TODO: Look into model for all query params
 @router.get("", response_model=list[DocumentRead])
 async def list_documents(
     session: SessionDep,
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=1000),
+    embedding_status: str | None = Query(default=None),
 ) -> list[Document]:
-    """List all documents with pagination."""
+    """List all documents with pagination, optionally filtered by embedding status."""
+    if embedding_status:
+        return await Document.get_all_by_embedding_status(
+            session, embedding_status, offset=offset, limit=limit
+        )
     return await Document.get_all(session, offset=offset, limit=limit)
 
 
@@ -39,6 +47,7 @@ async def get_document(session: SessionDep, document_id: uuid.UUID) -> Document:
 async def create_document(
     session: SessionDep,
     storage: StorageServiceDep,
+    publisher: EventPublisherDep,
     file: UploadFile,
     filename: str | None = Form(None),
 ) -> Document:
@@ -57,9 +66,10 @@ async def create_document(
         file_size=file_size,
         storage_path=storage_path,
         content_hash=etag,
+        embedding_status="pending",
     )
     try:
-        return await Document.create(session, doc_in)
+        doc = await Document.create(session, doc_in)
     except Exception:
         try:
             await storage.delete_object(storage_path)
@@ -69,6 +79,25 @@ async def create_document(
                 storage_path=storage_path,
             )
         raise
+
+    # Publish event for async processing (best-effort)
+    try:
+        await publisher.publish_document_uploaded(
+            DocumentUploaded(
+                document_id=doc.id,
+                storage_path=doc.storage_path,
+                content_type=doc.content_type,
+                filename=doc.filename,
+            )
+        )
+    except Exception:
+        logger.warning(
+            "Failed to publish document.uploaded event",
+            document_id=str(doc.id),
+            exc_info=True,
+        )
+
+    return doc
 
 
 @router.patch("/{document_id}", response_model=DocumentRead)
@@ -100,9 +129,10 @@ async def update_document(
 async def delete_document(
     session: SessionDep,
     storage: StorageServiceDep,
+    publisher: EventPublisherDep,
     document_id: uuid.UUID,
 ) -> None:
-    """Delete a document and its stored file."""
+    """Delete a document, its stored file, and its embeddings."""
     doc = await Document.get(session, document_id)
     if doc is None:
         raise HTTPException(
@@ -110,6 +140,16 @@ async def delete_document(
             detail="Document not found",
         )
     storage_path = doc.storage_path
+
+    # Delete embeddings first
+    deleted_count = await Embedding.delete_by_source(session, "document", doc.id)
+    if deleted_count > 0:
+        logger.info(
+            "Deleted document embeddings",
+            document_id=str(doc.id),
+            count=deleted_count,
+        )
+
     await doc.delete(session)
     try:
         await storage.delete_object(storage_path)

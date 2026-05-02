@@ -2,12 +2,14 @@ from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fastai.admin_v1 import documents, health, users
+from fastai.events.core import EventPublisher
 from fastai.storage.core import StorageSettings
 
 
 def init_admin_v1_app(
     engine: AsyncEngine,
     storage_settings: StorageSettings,
+    event_publisher: EventPublisher,
 ) -> FastAPI:
     """Create the admin v1 FastAPI sub-application.
 
@@ -24,6 +26,7 @@ def init_admin_v1_app(
 
     app.state.db_engine = engine
     app.state.storage_settings = storage_settings
+    app.state.event_publisher = event_publisher
 
     app.include_router(documents.router)
     app.include_router(users.router)

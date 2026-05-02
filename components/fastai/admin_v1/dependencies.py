@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 
+from fastai.events.core import EventPublisher
 from fastai.storage.core import StorageService, StorageSettings
 
 
@@ -24,3 +25,12 @@ async def get_storage(
 
 
 StorageServiceDep = Annotated[StorageService, Depends(get_storage)]
+
+
+def get_event_publisher(request: Request) -> EventPublisher:
+    """Retrieve event publisher from application state."""
+    publisher: EventPublisher = request.app.state.event_publisher
+    return publisher
+
+
+EventPublisherDep = Annotated[EventPublisher, Depends(get_event_publisher)]

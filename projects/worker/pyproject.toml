@@ -6,48 +6,46 @@ build-backend = "hatchling.build"
 packages = ["fastai"]
 
 [project]
-name = "api"
+name = "worker"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "asgi-correlation-id>=4.3.4",
-    "authlib>=1.6.0",
-    "fastapi>=0.115.12",
-    "gunicorn>=23.0.0",
-    "joserfc>=1.6.0",
-    "logfire[fastapi,sqlalchemy]>=4.27.0",
-    "pydantic[email]>=2.11.5",
-    "pydantic-settings>=2.9.1",
+    "faststream[nats]>=0.6.7",
+    "docling>=2.86.0",
     "sqlalchemy[asyncio]>=2.0.41",
     "sqlmodel>=0.0.24",
-    "starlette>=0.46.2",
     "structlog>=25.3.0",
-    "pwdlib[argon2]>=0.3.0",
-    "uvicorn>=0.34.2",
+    "pydantic-settings>=2.9.1",
     "pydantic-ai-slim[logfire,openai,openrouter,anthropic]>=1.67.0",
-    "python-multipart>=0.0.22",
     "asyncpg>=0.31.0",
     "pgvector>=0.4.1",
     "aioboto3>=15.5.0",
     "types-aioboto3[essential]>=15.5.0",
-    "faststream[nats]>=0.6.7",
+    "fastapi>=0.115.12",
+    "torch>=2.2.2",
+    "torchvision>=0.22.0",
 ]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+torchvision = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.hatch.build.hooks.polylith-bricks]
 
 [tool.polylith.bricks]
-"../../bases/fastai/api" = "fastai/api"
+"../../bases/fastai/worker" = "fastai/worker"
 "../../components/fastai/database" = "fastai/database"
-"../../components/fastai/logger" = "fastai/logger"
 "../../components/fastai/utils" = "fastai/utils"
-"../../components/fastai/auth" = "fastai/auth"
-"../../components/fastai/users" = "fastai/users"
-"../../components/fastai/admin_v1" = "fastai/admin_v1"
-"../../components/fastai/api_v1" = "fastai/api_v1"
-"../../components/fastai/items" = "fastai/items"
-"../../components/fastai/agents" = "fastai/agents"
-"../../components/fastai/chats" = "fastai/chats"
+"../../components/fastai/events" = "fastai/events"
+"../../components/fastai/extraction" = "fastai/extraction"
 "../../components/fastai/embeddings" = "fastai/embeddings"
 "../../components/fastai/documents" = "fastai/documents"
+"../../components/fastai/logger" = "fastai/logger"
+"../../components/fastai/subscribers_v1" = "fastai/subscribers_v1"
 "../../components/fastai/storage" = "fastai/storage"
-"../../components/fastai/events" = "fastai/events"

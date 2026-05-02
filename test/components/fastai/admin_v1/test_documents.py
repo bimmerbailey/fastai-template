@@ -200,6 +200,27 @@ async def test_delete_document(
 
 
 @pytest.mark.asyncio
+async def test_create_document_returns_embedding_status(
+    admin_client: AsyncClient, storage: StorageService
+) -> None:
+    res = await admin_client.post(BASE_URL, files=_make_upload_file())
+    assert res.status_code == 201
+    assert res.json()["embedding_status"] == "pending"
+
+
+@pytest.mark.asyncio
+async def test_list_documents_filter_embedding_status(
+    admin_client: AsyncClient, create_document_in_db
+) -> None:
+    await create_document_in_db(storage_path="uploads/pending.pdf")
+
+    res = await admin_client.get(BASE_URL, params={"embedding_status": "pending"})
+    assert res.status_code == 200
+    docs = res.json()
+    assert all(d["embedding_status"] == "pending" for d in docs)
+
+
+@pytest.mark.asyncio
 async def test_delete_document_not_found(admin_client: AsyncClient) -> None:
     fake_id = str(uuid.uuid4())
     res = await admin_client.delete(f"{BASE_URL}/{fake_id}")

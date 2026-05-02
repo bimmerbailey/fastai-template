@@ -12,16 +12,16 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from fastai.auth import RefreshToken, UserOAuthAccount
 from fastai.chats.models import Conversation, Message
 from fastai.database.core import create_db_engine, destroy_engine
-from fastai.storage.core import StorageSettings
+from fastai.documents.models import Document
 from fastai.embeddings.core import KnowledgeBase
 from fastai.embeddings.models import Embedding
 from fastai.embeddings.providers import create_embedder
 from fastai.embeddings.settings import EmbeddingSettings
 from fastai.items.models import Item
 from fastai.items.schemas import ItemCreate
+from fastai.storage.core import StorageSettings
 from fastai.users.models import User
 from fastai.users.schemas import UserCreate
-from fastai.documents.models import Document
 
 fake = Faker()
 
@@ -180,7 +180,7 @@ async def create_embeddings(session: AsyncSession, items: list[Item]) -> None:
 
 async def ensure_bucket() -> None:
     """Create the S3 storage bucket if it doesn't already exist."""
-    settings = StorageSettings()
+    settings = StorageSettings()  # pyright: ignore[reportCallIssue]
     async with settings.create_resource() as resource:
         bucket = await resource.Bucket(settings.bucket)
         try:
@@ -230,7 +230,7 @@ async def drop_tables(session: AsyncSession) -> None:
         RefreshToken,
         UserOAuthAccount,
         User,
-        Document
+        Document,
     ]:
         await session.exec(delete(table))
         await session.commit()

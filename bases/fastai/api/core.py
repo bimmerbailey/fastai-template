@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from fastai.admin_v1 import init_admin_v1_app
 from fastai.api_v1 import init_api_v1
 from fastai.database import PostgresSettings, create_db_engine, destroy_engine
+from fastai.events import EventPublisher, NatsSettings
 from fastai.logger.core import setup_api_logging
 from fastai.logger.middleware import LoggingMiddleware
 from fastai.storage import StorageSettings
@@ -20,9 +21,10 @@ logger = structlog.stdlib.get_logger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(db_engine: AsyncEngine, app: FastAPI):
+async def lifespan(db_engine: AsyncEngine, publisher: EventPublisher, app: FastAPI):
     logger.info("Initializing api")
-    yield
+    async with publisher:
+        yield
     await destroy_engine(engine=db_engine)
     logger.info("Shutting down api")
 
@@ -38,10 +40,12 @@ def init_api(db_settings: PostgresSettings | None = None) -> FastAPI:
     logfire.instrument_sqlalchemy()
 
     storage_settings = StorageSettings()  # pyright: ignore[reportCallIssue]
+    nats_settings = NatsSettings()  # pyright: ignore[reportCallIssue]
+    publisher = EventPublisher(nats_settings)
 
     engine = create_db_engine(db_settings)
     app = FastAPI(
-        lifespan=partial(lifespan, engine),
+        lifespan=partial(lifespan, engine, publisher),
         middleware=[
             Middleware(CorrelationIdMiddleware),
             Middleware(LoggingMiddleware, logger=logger),
@@ -59,7 +63,14 @@ def init_api(db_settings: PostgresSettings | None = None) -> FastAPI:
     logfire.instrument_fastapi(app=app)
 
     # Mount sub-applications
-    app.mount("/admin/v1", init_admin_v1_app(engine, storage_settings=storage_settings))
+    app.mount(
+        "/admin/v1",
+        init_admin_v1_app(
+            engine,
+            storage_settings=storage_settings,
+            event_publisher=publisher,
+        ),
+    )
     app.mount("/api/v1", init_api_v1(engine))
 
     return app

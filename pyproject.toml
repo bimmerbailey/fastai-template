@@ -28,6 +28,7 @@ dependencies = [
     "pgvector>=0.4.1",
     "aioboto3>=15.5.0",
     "types-aioboto3[essential]>=15.5.0",
+    "faststream[nats]>=0.6.7",
 ]
 
 [project.scripts]
@@ -48,6 +49,7 @@ dev = [
 [tool.uv]
 managed = true
 exclude-newer = "2 weeks"
+exclude-newer-package = { torch = false, torchvision = false }
 
 [tool.uv.workspace]
 members = ["projects/*"]
@@ -77,6 +79,10 @@ dev-mode-dirs = ["components", "bases", "development", "."]
 "components/fastai/embeddings" = "fastai/embeddings"
 "components/fastai/documents" = "fastai/documents"
 "components/fastai/storage" = "fastai/storage"
+"components/fastai/events" = "fastai/events"
+"components/fastai/extraction" = "fastai/extraction"
+"components/fastai/subscribers_v1" = "fastai/subscribers_v1"
+"bases/fastai/worker" = "fastai/worker"
 
 
 [tool.pytest.ini_options]

@@ -73,45 +73,26 @@ async def test_agent_calls_get_current_time_tool(
 
 
 @pytest.mark.asyncio
-async def test_agent_calls_search_items_tool(
+async def test_agent_calls_search_documents_tool(
     test_agent: Agent[AgentDeps, str],
     test_db_engine: AsyncEngine,
     agent_settings: AgentSettings,
     knowledge_base: KnowledgeBase,
 ) -> None:
-    """Agent calls the search_items tool when asked about inventory."""
+    """Agent calls the search_documents tool when asked about document content."""
     deps = AgentDeps(
         engine=test_db_engine,
         settings=agent_settings,
         knowledge_base=knowledge_base,
     )
 
-    result = await test_agent.run("Search for widgets in the inventory", deps=deps)
-
-    assert isinstance(result.output, str)
-    tool_names = _extract_tool_names(result)
-    assert "search_items" in tool_names
-
-
-@pytest.mark.asyncio
-async def test_agent_calls_get_item_count_tool(
-    test_agent: Agent[AgentDeps, str],
-    test_db_engine: AsyncEngine,
-    agent_settings: AgentSettings,
-    knowledge_base: KnowledgeBase,
-) -> None:
-    """Agent calls the get_item_count tool."""
-    deps = AgentDeps(
-        engine=test_db_engine,
-        settings=agent_settings,
-        knowledge_base=knowledge_base,
+    result = await test_agent.run(
+        "What do my documents say about project deadlines?", deps=deps
     )
 
-    result = await test_agent.run("How many items are in inventory?", deps=deps)
-
     assert isinstance(result.output, str)
     tool_names = _extract_tool_names(result)
-    assert "get_item_count" in tool_names
+    assert "search_documents" in tool_names
 
 
 def test_get_usage_limits(agent_settings: AgentSettings) -> None:

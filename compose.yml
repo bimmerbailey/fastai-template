@@ -11,6 +11,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      nats:
+        condition: service_healthy
     env_file:
       - path: example.env
         required: true
@@ -19,6 +21,7 @@ services:
     environment:
       - FASTAI_POSTGRES_HOSTNAME=postgres
       - FASTAI_STORAGE_ENDPOINT_URL=http://minio:9000
+      - FASTAI_NATS_URL=nats://nats:4222
     ports:
       - "8000:8000"
     volumes:
@@ -91,9 +94,51 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-  
+
+  nats:
+    image: nats:2.12-alpine
+    ports:
+      - "4222:4222"   # client
+      - "8222:8222"   # monitoring
+    command: ["-js", "-sd", "/data", "-m", "8222"]
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - nats:/data
+
+  worker:
+    tty: true
+    build:
+      context: .
+      dockerfile: ./projects/worker/Dockerfile
+      target: dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    env_file:
+      - path: example.env
+        required: true
+      - path: .env
+        required: false
+    environment:
+      - FASTAI_POSTGRES_HOSTNAME=postgres
+      - FASTAI_STORAGE_ENDPOINT_URL=http://minio:9000
+      - FASTAI_NATS_URL=nats://nats:4222
+    volumes:
+      - ./bases/fastai/worker:/src/bases/fastai/worker
+      - ./components:/src/components
+      - ./projects/worker:/src/projects/worker
+
 volumes:
   postgres:
   pgadmin:
   ollama:
   minio:
+  nats:

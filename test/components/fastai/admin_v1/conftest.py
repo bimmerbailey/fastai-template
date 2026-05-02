@@ -5,13 +5,25 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from faststream.nats import NatsBroker, TestNatsBroker
 from httpx import ASGITransport, AsyncClient
 
 from fastai.admin_v1.core import init_admin_v1_app
 from fastai.database.core import PostgresSettings
 from fastai.documents.models import Document
 from fastai.documents.schemas import DocumentCreate
+from fastai.events import NatsSettings
+from fastai.events.core import EventPublisher
 from fastai.storage.core import StorageSettings
+
+
+@pytest_asyncio.fixture
+async def event_publisher() -> AsyncGenerator[EventPublisher, None]:
+    """Create an EventPublisher backed by an in-memory TestNatsBroker."""
+    settings = NatsSettings()  # pyright: ignore[reportCallIssue]
+    broker = NatsBroker()
+    async with TestNatsBroker(broker) as test_broker:
+        yield EventPublisher(settings, broker=test_broker)
 
 
 @pytest_asyncio.fixture
@@ -19,9 +31,14 @@ async def app(
     test_db_settings: PostgresSettings,
     test_db_engine,
     storage_settings: StorageSettings,
+    event_publisher: EventPublisher,
 ) -> AsyncGenerator[FastAPI, None]:
     """Create FastAPI test application with storage configured."""
-    application = init_admin_v1_app(test_db_engine, storage_settings=storage_settings)
+    application = init_admin_v1_app(
+        test_db_engine,
+        storage_settings=storage_settings,
+        event_publisher=event_publisher,
+    )
     yield application
 
 

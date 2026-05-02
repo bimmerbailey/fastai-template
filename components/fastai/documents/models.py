@@ -8,6 +8,17 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from fastai.documents.schemas import DocumentBase, DocumentCreate, DocumentUpdate
 from fastai.utils.models import TimestampMixin
 
+EXTRACTABLE_CONTENT_TYPES: set[str] = {
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "text/html",
+    "text/markdown",
+    "image/png",
+    "image/jpeg",
+}
+
 
 class Document(DocumentBase, TimestampMixin, table=True):
     """Database table model for documents stored in S3/Minio."""
@@ -30,6 +41,11 @@ class Document(DocumentBase, TimestampMixin, table=True):
         default="pending",
         sa_column=Column(String, nullable=False, server_default="pending"),
     )
+
+    @staticmethod
+    def is_extractable(content_type: str) -> bool:
+        """Check if a content type is supported for text extraction."""
+        return content_type in EXTRACTABLE_CONTENT_TYPES
 
     @classmethod
     async def create(cls, session: AsyncSession, doc_in: DocumentCreate) -> "Document":
