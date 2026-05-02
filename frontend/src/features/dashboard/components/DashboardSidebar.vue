@@ -3,7 +3,6 @@ import { computed } from "vue"
 import { useRoute } from "vue-router"
 import {
   LayoutDashboard,
-  Package,
   MessageSquare,
   Users,
   PanelLeftClose,
@@ -20,7 +19,6 @@ const { sidebarCollapsed, toggleSidebar } = useDashboard()
 const navItems = computed(() => {
   const items = [
     { label: "Dashboard", to: "dashboard", icon: LayoutDashboard },
-    { label: "Items", to: "items", icon: Package },
     { label: "Chat", to: "chat", icon: MessageSquare },
   ]
 

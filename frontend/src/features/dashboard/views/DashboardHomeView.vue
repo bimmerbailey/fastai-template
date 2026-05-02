@@ -6,17 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
   <div class="space-y-6">
     <h1 class="text-2xl font-semibold text-foreground">Overview</h1>
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <Card>
-        <CardHeader>
-          <CardTitle>Items</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p class="text-2xl font-bold text-foreground">—</p>
-          <p class="text-sm text-muted-foreground">Total items</p>
-        </CardContent>
-      </Card>
-
+    <div class="grid gap-4 sm:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>Conversations</CardTitle>

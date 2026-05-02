@@ -16,7 +16,6 @@ from fastai.documents.models import Document  # noqa: F401
 
 # Import ALL table models to populate SQLModel.metadata
 from fastai.embeddings.models import Embedding  # noqa: F401
-from fastai.items.models import Item  # noqa: F401
 from fastai.users.models import User  # noqa: F401
 
 config = context.config

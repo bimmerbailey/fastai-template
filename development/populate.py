@@ -1,4 +1,3 @@
-from decimal import Decimal
 from pathlib import Path
 
 import anyio
@@ -13,12 +12,7 @@ from fastai.auth import RefreshToken, UserOAuthAccount
 from fastai.chats.models import Conversation, Message
 from fastai.database.core import create_db_engine, destroy_engine
 from fastai.documents.models import Document
-from fastai.embeddings.core import KnowledgeBase
 from fastai.embeddings.models import Embedding
-from fastai.embeddings.providers import create_embedder
-from fastai.embeddings.settings import EmbeddingSettings
-from fastai.items.models import Item
-from fastai.items.schemas import ItemCreate
 from fastai.storage.core import StorageSettings
 from fastai.users.models import User
 from fastai.users.schemas import UserCreate
@@ -65,41 +59,6 @@ STATIC_USERS: list[dict[str, str | bool]] = [
     },
 ]
 
-# ── Sample items ──
-
-SAMPLE_ITEMS: list[dict[str, str | int | Decimal | None]] = [
-    {
-        "name": "Wireless Keyboard",
-        "cost": Decimal("49.99"),
-        "description": "Bluetooth mechanical keyboard",
-        "quantity": 25,
-    },
-    {
-        "name": "USB-C Hub",
-        "cost": Decimal("34.50"),
-        "description": "7-in-1 USB-C dock with HDMI",
-        "quantity": 50,
-    },
-    {
-        "name": "Monitor Stand",
-        "cost": Decimal("79.00"),
-        "description": "Adjustable aluminum monitor riser",
-        "quantity": 15,
-    },
-    {
-        "name": "Webcam HD",
-        "cost": Decimal("89.99"),
-        "description": "1080p webcam with noise-cancelling mic",
-        "quantity": 30,
-    },
-    {
-        "name": "Desk Lamp",
-        "cost": Decimal("29.99"),
-        "description": "LED desk lamp with adjustable brightness",
-        "quantity": 40,
-    },
-]
-
 
 async def create_users(session: AsyncSession) -> list[User]:
     """Create static users and a batch of random users."""
@@ -129,55 +88,6 @@ async def create_users(session: AsyncSession) -> list[User]:
     return users
 
 
-async def create_items(session: AsyncSession) -> list[Item]:
-    """Create static items and a batch of random items."""
-    items: list[Item] = []
-
-    # Static items
-    for data in SAMPLE_ITEMS:
-        item = await Item.create(session, ItemCreate(**data))  # type: ignore[arg-type]
-        items.append(item)
-        print(f"  Created item: {item.name} (${item.cost})")
-
-    # Random items
-    for _ in range(20):
-        item = await Item.create(
-            session,
-            ItemCreate(
-                name=fake.catch_phrase(),
-                cost=Decimal(
-                    str(
-                        round(
-                            fake.pyfloat(min_value=5, max_value=500, right_digits=2), 2
-                        )
-                    )
-                ),
-                description=fake.sentence(),
-                quantity=fake.random_int(min=0, max=100),
-            ),
-        )
-        items.append(item)
-        print(f"  Created item: {item.name} (${item.cost})")
-
-    return items
-
-
-async def create_embeddings(session: AsyncSession, items: list[Item]) -> None:
-    """Generate and store embeddings for seeded items."""
-    settings = EmbeddingSettings()
-    kb = KnowledgeBase(create_embedder(settings), settings)
-    for item in items:
-        await session.refresh(item)
-        await kb.embed_and_store(
-            session,
-            source_type="item",
-            source_id=item.id,
-            content=item.build_embedding_text(),
-            metadata={"name": item.name},
-        )
-        print(f"  Embedded item: {item.name}")
-
-
 async def ensure_bucket() -> None:
     """Create the S3 storage bucket if it doesn't already exist."""
     settings = StorageSettings()  # pyright: ignore[reportCallIssue]
@@ -199,9 +109,7 @@ def run_migrations() -> None:
     print("Migrations applied successfully.")
 
 
-async def seed_database(
-    session: AsyncSession, should_create_embeddings: bool = False
-) -> None:
+async def seed_database(session: AsyncSession) -> None:
     """Run the full database seed."""
     await to_thread.run_sync(run_migrations)
 
@@ -211,20 +119,12 @@ async def seed_database(
     print("Creating users...")
     await create_users(session)
 
-    print("\nCreating items...")
-    items = await create_items(session)
-
-    if should_create_embeddings:
-        print("\nCreating embeddings...")
-        await create_embeddings(session, items)
-
     print("\nDone! Database seeded successfully.")
 
 
 async def drop_tables(session: AsyncSession) -> None:
     for table in [
         Embedding,
-        Item,
         Message,
         Conversation,
         RefreshToken,
@@ -236,20 +136,19 @@ async def drop_tables(session: AsyncSession) -> None:
         await session.commit()
 
 
-async def _main(should_create_embeddings: bool = False) -> None:
+async def _main() -> None:
     engine = create_db_engine()
     async with AsyncSession(engine) as session:
         try:
             await drop_tables(session)
         except Exception:
             await session.rollback()
-        await seed_database(session, should_create_embeddings)
+        await seed_database(session)
     await destroy_engine(engine)
 
 
 def main() -> None:
     """Sync entry point for the ``seed`` console script."""
-    # TODO: Arg parse for should_create_embeddings
     anyio.run(_main)
 
 

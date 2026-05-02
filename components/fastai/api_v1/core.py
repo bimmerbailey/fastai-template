@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from fastai.agents.core import create_agent
 from fastai.agents.dependencies import AgentDeps
 from fastai.agents.settings import AgentSettings
-from fastai.api_v1 import authentication, chats, conversations, health, items
+from fastai.api_v1 import authentication, chats, conversations, health
 from fastai.auth.settings import AuthSettings
 from fastai.auth.token_service import TokenService
 from fastai.embeddings.core import KnowledgeBase
@@ -68,7 +68,6 @@ def init_api_v1(
     app.state.knowledge_base = kb
 
     app.include_router(authentication.router)
-    app.include_router(items.router)
     app.include_router(health.router)
     app.include_router(chats.router)
     app.include_router(conversations.router)

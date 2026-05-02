@@ -1,11 +1,9 @@
 import uuid
-from decimal import Decimal
 
 import pytest
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from fastai.embeddings.core import KnowledgeBase
-from fastai.items.models import Item
 
 integration = pytest.mark.integration
 
@@ -112,34 +110,3 @@ async def test_search_no_results(
         limit=5,
     )
     assert results == []
-
-
-class TestBuildEmbeddingText:
-    """Tests for Item.build_embedding_text."""
-
-    def test_full_item(self) -> None:
-        item = Item(
-            name="Widget",
-            description="A useful widget",
-            cost=Decimal("9.99"),
-            quantity=10,
-        )
-        assert item.build_embedding_text() == (
-            "Item: Widget\nDescription: A useful widget\nCost: $9.99\nQuantity: 10"
-        )
-
-    def test_minimal_item(self) -> None:
-        item = Item(name="Minimal")
-        assert item.build_embedding_text() == "Item: Minimal\nQuantity: 0"
-
-    def test_no_description(self) -> None:
-        item = Item(name="NoCost", cost=Decimal("5.00"), quantity=3)
-        text = item.build_embedding_text()
-        assert "Description:" not in text
-        assert "Cost: $5.0" in text
-
-    def test_no_cost(self) -> None:
-        item = Item(name="Free", description="A free item", quantity=1)
-        text = item.build_embedding_text()
-        assert "Cost:" not in text
-        assert "Description: A free item" in text

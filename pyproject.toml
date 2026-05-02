@@ -67,7 +67,6 @@ dev-mode-dirs = ["components", "bases", "development", "."]
 [tool.polylith.bricks]
 "bases/fastai/api" = "fastai/api"
 "components/fastai/users" = "fastai/users"
-"components/fastai/items" = "fastai/items"
 "components/fastai/database" = "fastai/database"
 "components/fastai/logger" = "fastai/logger"
 "components/fastai/utils" = "fastai/utils"

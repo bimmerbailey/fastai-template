@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router"
 import { authRoutes } from "@/features/auth/routes"
-import { itemRoutes } from "@/features/items/routes"
 import { chatRoutes } from "@/features/chat/routes"
 import { adminRoutes } from "@/features/admin/routes"
 
@@ -18,7 +17,6 @@ const router = createRouter({
           name: "dashboard",
           component: () => import("@/features/dashboard/views/DashboardHomeView.vue"),
         },
-        ...itemRoutes,
         ...chatRoutes,
         ...adminRoutes,
       ],
