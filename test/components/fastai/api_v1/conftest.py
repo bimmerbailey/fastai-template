@@ -10,6 +10,7 @@ from fastai.agents import AgentDeps, AgentSettings
 from fastai.api_v1 import init_api_v1
 from fastai.auth.settings import AuthSettings
 from fastai.database.core import PostgresSettings
+from fastai.embeddings.core import KnowledgeBase
 
 
 @pytest_asyncio.fixture
@@ -18,6 +19,7 @@ async def app(
     test_db_engine,
     agent_settings: AgentSettings,
     test_agent: Agent[AgentDeps, str],
+    knowledge_base: KnowledgeBase,
 ) -> AsyncGenerator[FastAPI, None]:
     """Create FastAPI test application."""
     test_secret = "test-secret-key-at-least-32-characters-long"
@@ -28,6 +30,7 @@ async def app(
         agent=test_agent,
         agent_settings=agent_settings,
         auth_settings=auth_settings,
+        knowledge_base=knowledge_base,
     )
     yield application
 
