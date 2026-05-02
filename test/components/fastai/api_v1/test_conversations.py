@@ -139,9 +139,7 @@ async def test_list_conversations_pagination(
     for i in range(5):
         await _create_conversation(authenticated_client, title=f"Page Conv {i}")
 
-    res = await authenticated_client.get(
-        BASE_URL, params={"offset": 0, "limit": 2}
-    )
+    res = await authenticated_client.get(BASE_URL, params={"offset": 0, "limit": 2})
 
     assert res.status_code == 200
     assert len(res.json()) == 2
@@ -544,9 +542,7 @@ async def test_delete_message_other_user_404(
     assert res.status_code == 404
 
     # Original should still exist
-    get_res = await authenticated_client.get(
-        f"{_messages_url(conv['id'])}/{msg['id']}"
-    )
+    get_res = await authenticated_client.get(f"{_messages_url(conv['id'])}/{msg['id']}")
     assert get_res.status_code == 200
 
 

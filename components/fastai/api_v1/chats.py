@@ -63,7 +63,9 @@ async def chat(
     needs_title: bool
     if chat_request.conversation_id is not None:
         conv = await Conversation.get(
-            session, chat_request.conversation_id, user_id=user.id  # pyright: ignore[reportCallIssue]
+            session,
+            chat_request.conversation_id,
+            user_id=user.id,  # pyright: ignore[reportCallIssue]
         )
         if conv is None:
             raise HTTPException(
@@ -85,7 +87,9 @@ async def chat(
 
     # ── Build message history from persisted messages ──
     existing_messages = await Message.get_by_conversation(
-        session, conversation_id=conversation_id, user_id=user.id  # pyright: ignore[reportCallIssue]
+        session,
+        conversation_id=conversation_id,
+        user_id=user.id,  # pyright: ignore[reportCallIssue]
     )
     message_history = messages_to_history(existing_messages)
 

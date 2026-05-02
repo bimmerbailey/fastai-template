@@ -145,4 +145,6 @@ KnowledgeBaseDep = Annotated[KnowledgeBase, Depends(get_knowledge_base)]
 AuthSettingsDep = Annotated[AuthSettings, Depends(get_auth_settings)]
 TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]
 CurrentUserDep = Annotated[AuthenticatedUser, Security(get_scoped_user)]
-CurrentAdminDep = Annotated[AuthenticatedUser, Security(get_scoped_user, scopes=["admin"])]
+CurrentAdminDep = Annotated[
+    AuthenticatedUser, Security(get_scoped_user, scopes=["admin"])
+]

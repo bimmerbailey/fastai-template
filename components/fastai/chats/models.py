@@ -6,8 +6,8 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy import Index
 from sqlalchemy import text as sa_text
 from sqlmodel import Column, DateTime, Field, Relationship, String, Text, func, select
-from sqlmodel.sql._expression_select_cls import SelectOfScalar
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel.sql._expression_select_cls import SelectOfScalar
 
 from fastai.chats.schemas import (
     ConversationBase,

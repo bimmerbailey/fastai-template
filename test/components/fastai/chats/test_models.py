@@ -112,7 +112,9 @@ async def test_get_conversation(
 ) -> None:
     assert sample_conversation.id is not None
     fetched = await Conversation.get(
-        test_db_session, sample_conversation.id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+        test_db_session,
+        sample_conversation.id,
+        user_id=sample_user_id,  # pyright: ignore[reportCallIssue]
     )
 
     assert fetched is not None
@@ -123,7 +125,9 @@ async def test_get_conversation(
 @pytest.mark.asyncio
 async def test_get_conversation_not_found(test_db_session: AsyncSession) -> None:
     fetched = await Conversation.get(
-        test_db_session, uuid.uuid4(), user_id=uuid.uuid4()  # pyright: ignore[reportCallIssue]
+        test_db_session,
+        uuid.uuid4(),
+        user_id=uuid.uuid4(),  # pyright: ignore[reportCallIssue]
     )
 
     assert fetched is None
@@ -150,7 +154,9 @@ async def test_get_conversation_wrong_user_returns_none(
     )
     assert other_user.id is not None
     fetched = await Conversation.get(
-        test_db_session, conv_id, user_id=other_user.id  # pyright: ignore[reportCallIssue]
+        test_db_session,
+        conv_id,
+        user_id=other_user.id,  # pyright: ignore[reportCallIssue]
     )
     assert fetched is None
 
@@ -232,7 +238,9 @@ async def test_delete_conversation(
     await sample_conversation.delete(test_db_session)
 
     fetched = await Conversation.get(
-        test_db_session, conv_id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+        test_db_session,
+        conv_id,
+        user_id=sample_user_id,  # pyright: ignore[reportCallIssue]
     )
     assert fetched is None
 
@@ -260,7 +268,9 @@ async def test_delete_conversation_cascades_messages(
     await sample_conversation.delete(test_db_session)
 
     fetched_msg = await Message.get(
-        test_db_session, msg_id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+        test_db_session,
+        msg_id,
+        user_id=sample_user_id,  # pyright: ignore[reportCallIssue]
     )
     assert fetched_msg is None
 
@@ -314,7 +324,9 @@ async def test_get_message(
 ) -> None:
     assert sample_message.id is not None
     fetched = await Message.get(
-        test_db_session, sample_message.id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+        test_db_session,
+        sample_message.id,
+        user_id=sample_user_id,  # pyright: ignore[reportCallIssue]
     )
 
     assert fetched is not None
@@ -325,7 +337,9 @@ async def test_get_message(
 @pytest.mark.asyncio
 async def test_get_message_not_found(test_db_session: AsyncSession) -> None:
     fetched = await Message.get(
-        test_db_session, uuid.uuid4(), user_id=uuid.uuid4()  # pyright: ignore[reportCallIssue]
+        test_db_session,
+        uuid.uuid4(),
+        user_id=uuid.uuid4(),  # pyright: ignore[reportCallIssue]
     )
 
     assert fetched is None
@@ -352,7 +366,9 @@ async def test_get_message_wrong_user_returns_none(
     )
     assert other_user.id is not None
     fetched = await Message.get(
-        test_db_session, msg_id, user_id=other_user.id  # pyright: ignore[reportCallIssue]
+        test_db_session,
+        msg_id,
+        user_id=other_user.id,  # pyright: ignore[reportCallIssue]
     )
     assert fetched is None
 
@@ -386,7 +402,9 @@ async def test_get_by_conversation(
     )
 
     messages = await Message.get_by_conversation(
-        test_db_session, conv_id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+        test_db_session,
+        conv_id,
+        user_id=sample_user_id,  # pyright: ignore[reportCallIssue]
     )
 
     assert len(messages) == 3
@@ -415,7 +433,11 @@ async def test_get_by_conversation_pagination(
         )
 
     page = await Message.get_by_conversation(
-        test_db_session, conv_id, user_id=sample_user_id, offset=2, limit=2  # pyright: ignore[reportCallIssue]
+        test_db_session,
+        conv_id,
+        user_id=sample_user_id,
+        offset=2,
+        limit=2,  # pyright: ignore[reportCallIssue]
     )
 
     assert len(page) == 2
@@ -444,7 +466,9 @@ async def test_get_by_conversation_ordered_by_created_at(
     )
 
     messages = await Message.get_by_conversation(
-        test_db_session, conv_id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+        test_db_session,
+        conv_id,
+        user_id=sample_user_id,  # pyright: ignore[reportCallIssue]
     )
 
     assert messages[0].id == first.id
@@ -463,6 +487,8 @@ async def test_delete_message(
     await sample_message.delete(test_db_session)
 
     fetched = await Message.get(
-        test_db_session, msg_id, user_id=sample_user_id  # pyright: ignore[reportCallIssue]
+        test_db_session,
+        msg_id,
+        user_id=sample_user_id,  # pyright: ignore[reportCallIssue]
     )
     assert fetched is None

@@ -96,9 +96,7 @@ def _register_tools(agent: Agent[AgentDeps, str]) -> None:
 
         lines = [f"Found {len(results)} relevant passage(s):"]
         for r in results:
-            lines.append(
-                f"- {r.chunk_text[:300]} (relevance: {r.score:.2f})"
-            )
+            lines.append(f"- {r.chunk_text[:300]} (relevance: {r.score:.2f})")
         return "\n".join(lines)
 
 
