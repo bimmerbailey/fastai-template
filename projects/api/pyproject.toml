@@ -2,6 +2,9 @@
 requires = ["hatchling", "hatch-polylith-bricks"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build]
+dev-mode-dirs = ["../../components", "../../bases", "../../development", "../.."]
+
 [tool.hatch.build.targets.wheel]
 packages = ["fastai"]
 
