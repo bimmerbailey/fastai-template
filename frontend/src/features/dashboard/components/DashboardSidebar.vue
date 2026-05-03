@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useRoute } from "vue-router"
-import { LayoutDashboard, MessageSquare, Users, PanelLeftClose, PanelLeft } from "lucide-vue-next"
+import { LayoutDashboard, MessageSquare, Users, FileText, Database, PanelLeftClose, PanelLeft } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/features/auth/stores/auth.store"
 import { useDashboard } from "../composables/useDashboard"
@@ -17,7 +17,11 @@ const navItems = computed(() => {
   ]
 
   if (authStore.user?.is_admin) {
-    items.push({ label: "Users", to: "admin-users", icon: Users })
+    items.push(
+      { label: "Users", to: "admin-users", icon: Users },
+      { label: "Documents", to: "admin-documents", icon: FileText },
+      { label: "Embeddings", to: "admin-embeddings", icon: Database },
+    )
   }
 
   return items

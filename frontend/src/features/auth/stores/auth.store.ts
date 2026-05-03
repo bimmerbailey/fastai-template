@@ -11,10 +11,15 @@ export const useAuthStore = defineStore("auth", () => {
   const user = ref<AuthUser | null>(null)
   const isAuthenticated = computed(() => !!token.value)
 
+  async function fetchUser(): Promise<void> {
+    user.value = await authService.getMe()
+  }
+
   async function login(payload: LoginPayload): Promise<void> {
     const response = await authService.login(payload)
     token.value = response.access_token
     localStorage.setItem("auth_token", response.access_token)
+    await fetchUser()
     await router.push({ name: "dashboard" })
   }
 
@@ -29,6 +34,7 @@ export const useAuthStore = defineStore("auth", () => {
     token,
     user,
     isAuthenticated,
+    fetchUser,
     login,
     logout,
   }
