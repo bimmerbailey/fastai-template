@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useRoute } from "vue-router"
-import { LayoutDashboard, MessageSquare, Users, FileText, Database, PanelLeftClose, PanelLeft } from "lucide-vue-next"
+import {
+  LayoutDashboard,
+  MessageSquare,
+  Users,
+  FileText,
+  Database,
+  PanelLeftClose,
+  PanelLeft,
+} from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/features/auth/stores/auth.store"
 import { useDashboard } from "../composables/useDashboard"

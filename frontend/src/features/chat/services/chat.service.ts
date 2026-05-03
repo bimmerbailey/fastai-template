@@ -14,7 +14,7 @@ export const chatService = {
     return api<ChatResponse>("/chat", { method: "POST", body: payload })
   },
 
-  async getConversations(params: ConversationListParams): Promise<ConversationRead[]> {
+  async getConversations(params?: ConversationListParams): Promise<ConversationRead[]> {
     return api<ConversationRead[]>("/conversations", { params })
   },
 

@@ -152,7 +152,9 @@ onMounted(async () => {
           </div>
           <div>
             <dt class="text-sm font-medium text-muted-foreground">File Size</dt>
-            <dd class="mt-1 text-sm text-foreground">{{ formatSize(selectedDocument.file_size) }}</dd>
+            <dd class="mt-1 text-sm text-foreground">
+              {{ formatSize(selectedDocument.file_size) }}
+            </dd>
           </div>
           <div>
             <dt class="text-sm font-medium text-muted-foreground">Status</dt>
@@ -166,8 +168,11 @@ onMounted(async () => {
                     selectedDocument.embedding_status === 'pending',
                   'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400':
                     selectedDocument.embedding_status === 'failed',
-                  'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400':
-                    !['complete', 'pending', 'failed'].includes(selectedDocument.embedding_status),
+                  'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400': ![
+                    'complete',
+                    'pending',
+                    'failed',
+                  ].includes(selectedDocument.embedding_status),
                 }"
               >
                 {{ selectedDocument.embedding_status }}
@@ -176,7 +181,9 @@ onMounted(async () => {
           </div>
           <div>
             <dt class="text-sm font-medium text-muted-foreground">Storage Path</dt>
-            <dd class="mt-1 text-sm text-foreground break-all">{{ selectedDocument.storage_path }}</dd>
+            <dd class="mt-1 text-sm text-foreground break-all">
+              {{ selectedDocument.storage_path }}
+            </dd>
           </div>
           <div>
             <dt class="text-sm font-medium text-muted-foreground">Content Hash</dt>
@@ -207,14 +214,11 @@ onMounted(async () => {
       </UiCardHeader>
       <UiCardContent>
         <div v-if="chunks.length === 0" class="text-sm text-muted-foreground">
-          No chunks found. The document may still be processing or has a non-extractable content type.
+          No chunks found. The document may still be processing or has a non-extractable content
+          type.
         </div>
         <div v-else class="space-y-3">
-          <div
-            v-for="chunk in chunks"
-            :key="chunk.id"
-            class="rounded-md border border-border p-3"
-          >
+          <div v-for="chunk in chunks" :key="chunk.id" class="rounded-md border border-border p-3">
             <div class="mb-2 flex items-center justify-between">
               <span class="text-xs font-medium text-muted-foreground">
                 Chunk #{{ chunk.chunk_index }}
