@@ -37,13 +37,13 @@ def init_api(db_settings: PostgresSettings | None = None) -> FastAPI:
     # TODO: Setup jaeger to send to
     logfire.configure(send_to_logfire=False)
     logfire.instrument_pydantic_ai()
-    logfire.instrument_sqlalchemy()
 
     storage_settings = StorageSettings()  # pyright: ignore[reportCallIssue]
     nats_settings = NatsSettings()  # pyright: ignore[reportCallIssue]
     publisher = EventPublisher(nats_settings)
 
     engine = create_db_engine(db_settings)
+    logfire.instrument_sqlalchemy(engine=engine)
     app = FastAPI(
         lifespan=partial(lifespan, engine, publisher),
         middleware=[
