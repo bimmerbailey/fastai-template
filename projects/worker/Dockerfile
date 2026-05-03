@@ -33,7 +33,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
      uv sync --package worker --frozen
 
 ENTRYPOINT ["uv", "run"]
-CMD ["faststream", "run", "fastai.worker:create_app", "--reload", "--factory"]
+CMD ["faststream", "run", "fastai.worker:create_app", "--reload", "--app-dir", "/src", "--factory"]
 
 FROM base AS builder
 
