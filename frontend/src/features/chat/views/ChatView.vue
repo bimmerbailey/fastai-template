@@ -9,6 +9,7 @@ const {
   conversations,
   activeConversation,
   messages,
+  isThinking,
   isSending,
   error,
   fetchConversations,
@@ -35,7 +36,7 @@ onMounted(() => {
 
     <div class="flex flex-1 flex-col overflow-hidden rounded-lg border border-border">
       <p v-if="error" class="px-4 pt-2 text-sm text-destructive">{{ error }}</p>
-      <ChatMessageList :messages="messages" />
+      <ChatMessageList :messages="messages" :is-thinking="isThinking" />
       <ChatInput :disabled="isSending" @send="sendMessage" />
     </div>
   </div>

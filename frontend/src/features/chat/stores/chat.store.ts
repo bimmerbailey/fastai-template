@@ -12,6 +12,7 @@ export const useChatStore = defineStore("chat", () => {
   const conversations = ref<ConversationRead[]>([])
   const activeConversation = ref<ConversationRead | null>(null)
   const messages = ref<MessageRead[]>([])
+  const isThinking = ref(false)
 
   async function fetchConversations(params?: ConversationListParams): Promise<void> {
     conversations.value = await chatService.getConversations(params)
@@ -31,18 +32,36 @@ export const useChatStore = defineStore("chat", () => {
   }
 
   async function sendMessage(text: string): Promise<ChatResponse> {
-    const response = await chatService.sendMessage({
-      message: text,
-      conversation_id: activeConversation.value?.id,
-    })
-
-    if (!activeConversation.value) {
-      activeConversation.value = await chatService.getConversation(response.conversation_id)
-      conversations.value.unshift(activeConversation.value)
+    const optimisticId = crypto.randomUUID()
+    const optimisticMessage: MessageRead = {
+      id: optimisticId,
+      conversation_id: activeConversation.value?.id ?? "",
+      role: "user",
+      content_text: text,
+      created_at: new Date().toISOString(),
     }
+    messages.value.push(optimisticMessage)
+    isThinking.value = true
 
-    messages.value = await chatService.getMessages(response.conversation_id)
-    return response
+    try {
+      const response = await chatService.sendMessage({
+        message: text,
+        conversation_id: activeConversation.value?.id,
+      })
+
+      if (!activeConversation.value) {
+        activeConversation.value = await chatService.getConversation(response.conversation_id)
+        conversations.value.unshift(activeConversation.value)
+      }
+
+      messages.value = await chatService.getMessages(response.conversation_id)
+      return response
+    } catch (e) {
+      messages.value = messages.value.filter((m) => m.id !== optimisticId)
+      throw e
+    } finally {
+      isThinking.value = false
+    }
   }
 
   async function deleteConversation(id: string): Promise<void> {
@@ -58,6 +77,7 @@ export const useChatStore = defineStore("chat", () => {
     conversations,
     activeConversation,
     messages,
+    isThinking,
     fetchConversations,
     selectConversation,
     startNewConversation,

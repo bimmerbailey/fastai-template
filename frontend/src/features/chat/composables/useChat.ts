@@ -5,7 +5,7 @@ import type { ConversationListParams } from "../types/chat.types"
 
 export function useChat() {
   const store = useChatStore()
-  const { conversations, activeConversation, messages } = storeToRefs(store)
+  const { conversations, activeConversation, messages, isThinking } = storeToRefs(store)
 
   const isLoading = ref(false)
   const isSending = ref(false)
@@ -69,6 +69,7 @@ export function useChat() {
     conversations,
     activeConversation,
     messages,
+    isThinking,
     isLoading,
     isSending,
     error,
