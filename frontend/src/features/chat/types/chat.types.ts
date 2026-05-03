@@ -38,7 +38,6 @@ export interface ChatResponse {
 }
 
 export interface ConversationListParams {
-  user_id: string
   offset?: number
   limit?: number
 }

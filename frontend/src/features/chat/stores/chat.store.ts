@@ -13,7 +13,7 @@ export const useChatStore = defineStore("chat", () => {
   const activeConversation = ref<ConversationRead | null>(null)
   const messages = ref<MessageRead[]>([])
 
-  async function fetchConversations(params: ConversationListParams): Promise<void> {
+  async function fetchConversations(params?: ConversationListParams): Promise<void> {
     conversations.value = await chatService.getConversations(params)
   }
 

@@ -11,7 +11,7 @@ export function useChat() {
   const isSending = ref(false)
   const error = ref<string | null>(null)
 
-  async function fetchConversations(params: ConversationListParams): Promise<void> {
+  async function fetchConversations(params?: ConversationListParams): Promise<void> {
     isLoading.value = true
     error.value = null
     try {

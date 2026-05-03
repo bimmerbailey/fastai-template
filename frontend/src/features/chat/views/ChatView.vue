@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted } from "vue"
 import ConversationList from "../components/ConversationList.vue"
 import ChatMessageList from "../components/ChatMessageList.vue"
 import ChatInput from "../components/ChatInput.vue"
@@ -10,10 +11,15 @@ const {
   messages,
   isSending,
   error,
+  fetchConversations,
   selectConversation,
   startNewConversation,
   sendMessage,
 } = useChat()
+
+onMounted(() => {
+  fetchConversations()
+})
 </script>
 
 <template>
