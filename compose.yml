@@ -32,6 +32,8 @@ services:
 
   frontend:
     tty: true
+    init: true
+    stop_signal: SIGINT
     build:
       context: ./frontend
       dockerfile: Dockerfile
