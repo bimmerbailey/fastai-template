@@ -1,5 +1,10 @@
 import { adminApi } from "@/lib/api"
-import type { DocumentRead, DocumentListParams } from "../types/documents.types"
+import type {
+  DocumentRead,
+  DocumentListParams,
+  DocumentUpdate,
+  EmbeddingChunkRead,
+} from "../types/documents.types"
 
 export const documentsService = {
   async getDocuments(params?: DocumentListParams): Promise<DocumentRead[]> {
@@ -16,6 +21,14 @@ export const documentsService = {
 
   async reprocessDocument(id: string): Promise<DocumentRead> {
     return adminApi<DocumentRead>(`/documents/${id}/reprocess`, { method: "POST" })
+  },
+
+  async updateDocument(id: string, payload: DocumentUpdate): Promise<DocumentRead> {
+    return adminApi<DocumentRead>(`/documents/${id}`, { method: "PATCH", body: payload })
+  },
+
+  async getDocumentChunks(id: string): Promise<EmbeddingChunkRead[]> {
+    return adminApi<EmbeddingChunkRead[]>(`/documents/${id}/chunks`)
   },
 
   async uploadDocument(file: File, filename?: string): Promise<DocumentRead> {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue"
+import { useRouter } from "vue-router"
 import { useAdminDocuments } from "../composables/useAdminDocuments"
 import AdminDocumentsTable from "../components/AdminDocumentsTable.vue"
 import AdminDocumentUploadDialog from "../components/AdminDocumentUploadDialog.vue"
@@ -15,8 +16,13 @@ import {
 } from "@/components/ui"
 import { Upload } from "lucide-vue-next"
 
+const router = useRouter()
 const { documents, isLoading, error, fetchDocuments, removeDocument, reprocessDocument } =
   useAdminDocuments()
+
+function handleSelect(id: string): void {
+  router.push({ name: "admin-document-detail", params: { id } })
+}
 
 const showUploadDialog = ref(false)
 const showDeleteDialog = ref(false)
@@ -60,6 +66,7 @@ onMounted(() => fetchDocuments())
     <AdminDocumentsTable
       v-else
       :documents="documents"
+      @select="handleSelect"
       @delete="confirmDelete"
       @reprocess="handleReprocess"
     />

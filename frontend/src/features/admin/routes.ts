@@ -14,6 +14,12 @@ export const adminRoutes: RouteRecordRaw[] = [
     meta: { requiresAdmin: true },
   },
   {
+    path: "admin/documents/:id",
+    name: "admin-document-detail",
+    component: () => import("./views/AdminDocumentDetailView.vue"),
+    meta: { requiresAdmin: true },
+  },
+  {
     path: "admin/embeddings",
     name: "admin-embeddings",
     component: () => import("./views/AdminEmbeddingsView.vue"),
