@@ -8,7 +8,7 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 from fastapi.params import Body
 from fastapi.security import OAuth2PasswordRequestForm
 
-from fastai.api_v1.dependencies import AuthSettingsDep, TokenServiceDep
+from fastai.api_v1.dependencies import AuthSettingsDep, CurrentUserDep, TokenServiceDep
 from fastai.auth.models import RefreshToken
 from fastai.auth.schemas import OAuth2PasswordRequestBody, TokenResponse
 from fastai.auth.settings import AuthSettings
@@ -20,7 +20,7 @@ from fastai.users.exceptions import (
     UserStatusError,
 )
 from fastai.users.models import User
-from fastai.users.schemas import UserCreate
+from fastai.users.schemas import UserCreate, UserRead
 from fastai.utils.dependencies import SessionDep
 
 logger = structlog.stdlib.get_logger(__name__)
@@ -99,6 +99,21 @@ async def _issue_tokens(
     )
 
     return TokenResponse(access_token=access_token)
+
+
+@router.get("/me", response_model=UserRead)
+async def me(
+    session: SessionDep,
+    current_user: CurrentUserDep,
+) -> User:
+    """Return the currently authenticated user's profile."""
+    user = await User.get(session, current_user.id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found.",
+        )
+    return user
 
 
 @router.post(
