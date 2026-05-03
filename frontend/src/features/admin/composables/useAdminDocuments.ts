@@ -46,6 +46,20 @@ export function useAdminDocuments() {
     }
   }
 
+  async function uploadDocument(file: File, filename?: string): Promise<boolean> {
+    isLoading.value = true
+    error.value = null
+    try {
+      await store.uploadDocument(file, filename)
+      return true
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : "Failed to upload document"
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     documents,
     selectedDocument,
@@ -54,5 +68,6 @@ export function useAdminDocuments() {
     fetchDocuments,
     removeDocument,
     reprocessDocument,
+    uploadDocument,
   }
 }

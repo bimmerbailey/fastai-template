@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { DocumentRead } from "../types/documents.types"
+import { UiButton } from "@/components/ui"
+import { RefreshCw, Trash2 } from "lucide-vue-next"
 
 defineProps<{
   documents: DocumentRead[]
@@ -62,7 +64,25 @@ function formatSize(bytes: number): string {
             {{ new Date(doc.created_at).toLocaleDateString() }}
           </td>
           <td class="px-4 py-3 text-right">
-            <!-- TODO: action buttons -->
+            <div class="flex items-center justify-end gap-1">
+              <UiButton
+                variant="ghost"
+                size="icon-sm"
+                title="Reprocess document"
+                @click.stop="$emit('reprocess', doc.id)"
+              >
+                <RefreshCw class="h-4 w-4" />
+              </UiButton>
+              <UiButton
+                variant="ghost"
+                size="icon-sm"
+                title="Delete document"
+                class="text-destructive hover:text-destructive"
+                @click.stop="$emit('delete', doc.id)"
+              >
+                <Trash2 class="h-4 w-4" />
+              </UiButton>
+            </div>
           </td>
         </tr>
         <tr v-if="documents.length === 0">

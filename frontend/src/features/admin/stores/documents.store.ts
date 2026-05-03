@@ -29,6 +29,12 @@ export const useDocumentsStore = defineStore("adminDocuments", () => {
     return doc
   }
 
+  async function uploadDocument(file: File, filename?: string): Promise<DocumentRead> {
+    const doc = await documentsService.uploadDocument(file, filename)
+    documents.value.unshift(doc)
+    return doc
+  }
+
   return {
     documents,
     selectedDocument,
@@ -36,5 +42,6 @@ export const useDocumentsStore = defineStore("adminDocuments", () => {
     fetchDocument,
     removeDocument,
     reprocessDocument,
+    uploadDocument,
   }
 })

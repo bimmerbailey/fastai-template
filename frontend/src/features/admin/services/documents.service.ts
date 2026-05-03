@@ -17,4 +17,11 @@ export const documentsService = {
   async reprocessDocument(id: string): Promise<DocumentRead> {
     return adminApi<DocumentRead>(`/documents/${id}/reprocess`, { method: "POST" })
   },
+
+  async uploadDocument(file: File, filename?: string): Promise<DocumentRead> {
+    const formData = new FormData()
+    formData.append("file", file)
+    if (filename) formData.append("filename", filename)
+    return adminApi<DocumentRead>("/documents", { method: "POST", body: formData })
+  },
 }
