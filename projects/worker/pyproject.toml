@@ -15,7 +15,8 @@ requires-python = ">=3.13"
 dependencies = [
     "asgi-correlation-id>=4.3.4",
     "faststream[nats]>=0.6.7",
-    "docling>=2.86.0",
+    "pypdf>=5.0.0",
+    "ftfy>=6.0.0",
     "sqlalchemy[asyncio]>=2.0.41",
     "sqlmodel>=0.0.24",
     "structlog>=25.3.0",
@@ -26,18 +27,7 @@ dependencies = [
     "aioboto3>=15.5.0",
     "types-aioboto3[essential]>=15.5.0",
     "fastapi>=0.115.12",
-    "torch>=2.2.2",
-    "torchvision>=0.22.0",
 ]
-
-[tool.uv.sources]
-torch = [{ index = "pytorch-cpu" }]
-torchvision = [{ index = "pytorch-cpu" }]
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
 
 [tool.hatch.build.hooks.polylith-bricks]
 

@@ -196,3 +196,5 @@ cython_debug/
 
 .claude/
 .opencode/
+tmp/
+docs/_*

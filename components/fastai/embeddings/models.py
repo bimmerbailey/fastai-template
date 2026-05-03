@@ -136,6 +136,31 @@ class Embedding(SQLModel, table=True):
         return result.first()
 
     @classmethod
+    async def get_chunks_by_source(
+        cls,
+        session: AsyncSession,
+        source_type: str,
+        source_id: _uuid.UUID,
+    ) -> list["Embedding"]:
+        """Get all embedding chunks for a source, ordered by chunk_index.
+
+        Args:
+            session: The async database session.
+            source_type: The type of source (e.g. "document").
+            source_id: The UUID of the source record.
+
+        Returns:
+            List of Embedding records ordered by chunk_index.
+        """
+        statement = (
+            select(cls)
+            .where(cls.source_type == source_type, cls.source_id == source_id)
+            .order_by(cls.chunk_index)  # pyright: ignore[reportArgumentType]
+        )
+        result = await session.exec(statement)
+        return list(result.all())
+
+    @classmethod
     async def upsert(
         cls,
         session: AsyncSession,

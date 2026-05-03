@@ -38,7 +38,7 @@ async def process_document(
         1. Mark document as "processing"
         2. Check content type support
         3. Download file from S3
-        4. Extract text and chunk with docling
+        4. Extract text and chunk
         5. Embed each chunk
         6. Mark document as "completed"
 

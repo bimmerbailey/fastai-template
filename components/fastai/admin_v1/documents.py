@@ -7,6 +7,7 @@ from fastai.admin_v1.dependencies import EventPublisherDep, StorageServiceDep
 from fastai.documents.models import Document
 from fastai.documents.schemas import DocumentCreate, DocumentRead, DocumentUpdate
 from fastai.embeddings.models import Embedding
+from fastai.embeddings.schemas import EmbeddingRead
 from fastai.events.schemas import DocumentUploaded
 from fastai.utils.dependencies import SessionDep
 
@@ -41,6 +42,21 @@ async def get_document(session: SessionDep, document_id: uuid.UUID) -> Document:
             detail="Document not found",
         )
     return doc
+
+
+@router.get("/{document_id}/chunks", response_model=list[EmbeddingRead])
+async def list_document_chunks(
+    session: SessionDep,
+    document_id: uuid.UUID,
+) -> list[Embedding]:
+    """List all embedding chunks for a document, ordered by chunk_index."""
+    doc = await Document.get(session, document_id)
+    if doc is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+    return await Embedding.get_chunks_by_source(session, "document", document_id)
 
 
 @router.post("", response_model=DocumentRead, status_code=status.HTTP_201_CREATED)
@@ -158,3 +174,54 @@ async def delete_document(
             "Failed to delete S3 object after DB deletion",
             storage_path=storage_path,
         )
+
+
+@router.post(
+    "/{document_id}/reprocess",
+    response_model=DocumentRead,
+)
+async def reprocess_document(
+    session: SessionDep,
+    publisher: EventPublisherDep,
+    document_id: uuid.UUID,
+) -> Document:
+    """Re-process a document: delete existing embeddings and re-extract.
+
+    Resets the embedding status to "pending" and publishes a new
+    DocumentUploaded event so the worker re-extracts the document.
+    """
+    doc = await Document.get(session, document_id)
+    if doc is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    # Clear existing embeddings
+    deleted_count = await Embedding.delete_by_source(session, "document", doc.id)
+    if deleted_count > 0:
+        logger.info(
+            "Deleted existing embeddings for reprocessing",
+            document_id=str(doc.id),
+            count=deleted_count,
+        )
+
+    await doc.update_embedding_status(session, "pending")
+
+    try:
+        await publisher.publish_document_uploaded(
+            DocumentUploaded(
+                document_id=doc.id,
+                storage_path=doc.storage_path,
+                content_type=doc.content_type,
+                filename=doc.filename,
+            )
+        )
+    except Exception:
+        logger.warning(
+            "Failed to publish document.uploaded event for reprocessing",
+            document_id=str(doc.id),
+            exc_info=True,
+        )
+
+    return doc

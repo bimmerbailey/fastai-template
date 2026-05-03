@@ -10,11 +10,6 @@ COPY --from=ghcr.io/astral-sh/uv:0.10.11 /uv /uvx /bin/
 
 FROM uv AS base
 
-# OpenCV (cv2) runtime dependencies required by docling-ibm-models
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1 libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR "/src"
 
 COPY pyproject.toml uv.lock README.md ./
@@ -58,11 +53,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install -r requirements.txt
 
 FROM python:$PYTHON_VERSION-slim-bookworm AS prod
-
-# OpenCV (cv2) runtime dependencies required by docling-ibm-models
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1 libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
 
 ENV VIRTUAL_ENV=/opt/venv
 

@@ -70,6 +70,7 @@ def _register_tools(agent: Agent[AgentDeps, str]) -> None:
         now = datetime.now(timezone.utc)
         return now.isoformat()
 
+    # TODO: Should this return structured data?
     @agent.tool
     async def search_documents(
         ctx: RunContext[AgentDeps],
@@ -96,7 +97,10 @@ def _register_tools(agent: Agent[AgentDeps, str]) -> None:
 
         lines = [f"Found {len(results)} relevant passage(s):"]
         for r in results:
-            lines.append(f"- {r.chunk_text[:300]} (relevance: {r.score:.2f})")
+            source = r.metadata.get("filename", "unknown") if r.metadata else "unknown"
+            lines.append(
+                f"- [Source: {source}] {r.chunk_text} (relevance: {r.score:.2f})"
+            )
         return "\n".join(lines)
 
 

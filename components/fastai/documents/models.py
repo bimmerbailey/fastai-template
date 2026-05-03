@@ -10,13 +10,9 @@ from fastai.utils.models import TimestampMixin
 
 EXTRACTABLE_CONTENT_TYPES: set[str] = {
     "application/pdf",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "text/html",
     "text/markdown",
-    "image/png",
-    "image/jpeg",
+    "text/plain",
 }
 
 
